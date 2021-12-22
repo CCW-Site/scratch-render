@@ -1,13 +1,14 @@
 {
   "name": "@xigua/scratch-render",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "WebGL Renderer for Scratch 3.0",
   "author": "Massachusetts Institute of Technology",
   "license": "BSD-3-Clause",
   "homepage": "https://github.com/LLK/scratch-render#readme",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/LLK/scratch-render.git"
+    "url": "git+ssh://git@github.com/LLK/scratch-render.git",
+    "sha": "33bb3baa66bcdc531a1d298755d58513827aea1c"
   },
   "main": "./dist/node/scratch-render.js",
   "browser": "./src/index.js",
