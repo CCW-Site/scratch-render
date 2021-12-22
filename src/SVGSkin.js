@@ -27,7 +27,10 @@ class SVGSkin extends Skin {
 
         /** @type {RenderWebGL} */
         this._renderer = renderer;
-
+        /**
+         * ccw: to support box2d
+         */
+        this._svgTag = null;
         /** @type {HTMLImageElement} */
         this._svgImage = document.createElement('img');
 
@@ -193,6 +196,10 @@ class SVGSkin extends Skin {
      */
     setSVG (svgData, rotationCenter) {
         const svgTag = loadSvgString(svgData);
+
+        // ccw: support box2d extension
+        this._svgTag = svgTag;
+
         const svgText = serializeSvgToString(svgTag, true /* shouldInjectFonts */);
         this._svgImageLoaded = false;
 
