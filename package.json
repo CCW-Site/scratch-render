@@ -1,5 +1,5 @@
 {
-  "name": "scratch-render",
+  "name": "@xigua/scratch-render",
   "version": "0.1.0",
   "description": "WebGL Renderer for Scratch 3.0",
   "author": "Massachusetts Institute of Technology",
