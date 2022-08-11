@@ -5,6 +5,7 @@ const canvas = document.getElementById('scratch-stage');
 let fudge = 90;
 const renderer = new ScratchRender(canvas);
 renderer.setLayerGroupOrdering(['group1']);
+window.render = renderer;
 
 const drawableID = renderer.createDrawable('group1');
 renderer.updateDrawableProperties(drawableID, {
@@ -45,7 +46,7 @@ xhr.addEventListener('load', () => {
         });
     }
 });
-xhr.open('GET', 'https://m.xiguacity.cn/user_projects_assets/89e24cab353f807e324f65a560a9c137.svg');
+xhr.open('GET', 'https://m.xiguacity.cn/user_projects_assets/fa07bb0dea8397e9452f427e817afde8.svg');
 xhr.send();
 
 if (wantedSkin === WantedSkinType.pen) {

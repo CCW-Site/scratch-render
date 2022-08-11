@@ -90,7 +90,8 @@ module.exports = [
             'hull.js': true,
             'scratch-svg-renderer': true,
             'twgl.js': true,
-            'xml-escape': true
+            'xml-escape': true,
+            'three': true
         }
     })
 ];
