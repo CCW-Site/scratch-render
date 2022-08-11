@@ -33,7 +33,7 @@ image.addEventListener('load', () => {
     }
 });
 image.crossOrigin = 'anonymous';
-image.src = 'https://cdn.assets.scratch.mit.edu/internalapi/asset/7e24c99c1b853e52f8e7f9004416fa34.png/get/';
+image.src = 'https://m.xiguacity.cn/user_projects_assets/9a8d068456c6e0cc5597342cb5ffcaad.png';
 
 // SVG (cat 1-a)
 const xhr = new XMLHttpRequest();
@@ -45,7 +45,7 @@ xhr.addEventListener('load', () => {
         });
     }
 });
-xhr.open('GET', 'https://cdn.assets.scratch.mit.edu/internalapi/asset/b7853f557e4426412e64bb3da6531a99.svg/get/');
+xhr.open('GET', 'https://m.xiguacity.cn/user_projects_assets/89e24cab353f807e324f65a560a9c137.svg');
 xhr.send();
 
 if (wantedSkin === WantedSkinType.pen) {

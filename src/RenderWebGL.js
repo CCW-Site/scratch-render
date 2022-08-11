@@ -20,6 +20,8 @@ const __fenceBounds = new Rectangle();
 const __touchingColor = new Uint8ClampedArray(4);
 const __blendColor = new Uint8ClampedArray(4);
 
+import {DigitalGlitch} from './shaders/DigitalGlitch';
+
 // More pixels than this and we give up to the GPU and take the cost of readPixels
 // Width * Height * Number of drawables at location
 const __cpuTouchingColorPixelCount = 4e4;
@@ -703,20 +705,31 @@ class RenderWebGL extends EventEmitter {
             return;
         }
         this.dirty = false;
+        //console.info('draw');
 
         this._doExitDrawRegion();
 
         const gl = this._gl;
+
+        
 
         twgl.bindFramebufferInfo(gl, null);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(...this._backgroundColor4f);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
+         // TODO: 是否要在这里后处理全局特效？
+         this.tryLoadEffect();
+
         this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection, {
             framebufferWidth: gl.canvas.width,
             framebufferHeight: gl.canvas.height
         });
+
+       
+
+        
+
         /**
          * 旧版：CanvasRenderReady 之前是在scratch-gui 中触发，接收的是gl.canvas 但是会导致录屏闪屏
          * 新版：从render中直接触发 CanvasRenderReady 将canvas传递至 gui 进行录屏
@@ -727,6 +740,31 @@ class RenderWebGL extends EventEmitter {
             this._snapshotCallbacks.forEach(cb => cb(snapshot));
             this._snapshotCallbacks = [];
         }
+    }
+
+    tryLoadEffect (){
+        if (!this._effectLoaded) {
+            this._effectLoaded = true;
+            this._glitch = twgl.createProgramInfo(this._gl, [DigitalGlitch.vertexShader, DigitalGlitch.fragmentShader]);
+            this._time = 0;
+        }
+        this._time += 0.1;
+        
+        this._gl.useProgram(this._glitch.program);
+        twgl.setBuffersAndAttributes(this._gl, this._glitch, this._bufferInfo);
+        // twgl.setUniforms(this._glitch, { 
+        //     time: this._time,
+        //     mouse: [0, 0],
+        //     resolution: [this._gl.canvas.width, this._gl.canvas.height],
+        //  });
+        twgl.setUniforms(this._glitch, DigitalGlitch.uniforms);
+        twgl.setUniforms(this._glitch,{
+            byp: 0,
+            tDisp:
+        });
+        twgl.drawBufferInfo(this._gl, this._bufferInfo);
+        this.dirty = true;
+
     }
 
     /**

@@ -14,7 +14,8 @@ const base = {
         rules: [
             {
                 include: [
-                    path.resolve('src')
+                    path.resolve('src'),
+                    path.resolve('src/doc')
                 ],
                 test: /\.js$/,
                 loader: 'babel-loader',
@@ -40,6 +41,7 @@ module.exports = [
         target: 'web',
         entry: {
             playground: './src/playground/playground.js',
+            test: './src/playground/test.js',
             queryPlayground: './src/playground/queryPlayground.js'
         },
         output: {
