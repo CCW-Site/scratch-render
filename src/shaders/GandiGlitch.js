@@ -29,6 +29,10 @@ export default class GandiGlitch {
 				this.dirty = false;
 				this.bypass = 0;
 				// window.glitch = this;
+				this.options = {
+					amount: 100.0,
+					distortion: 1.0,
+				};
     }
 
 		set duration (d = 10){
@@ -171,11 +175,11 @@ precision mediump float;
             byp: this.bypass,
             tDisp: texture,
             tDiffuse: textureDiff,
-            amount: Math.random() / 100,
+            amount: Math.random() / this.options.amount,
             seed_x: MathUtils.randFloat(-1, 1),
             seed_y: MathUtils.randFloat(-1, 1),
-            distortion_x: MathUtils.randFloat(0, 1),
-            distortion_y: MathUtils.randFloat(0, 1),
+            distortion_x: MathUtils.randFloat(0, this.options.distortion),
+            distortion_y: MathUtils.randFloat(0, this.options.distortion),
             angle: MathUtils.randFloat(-Math.PI, Math.PI)
         });
         dirty = true;
