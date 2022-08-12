@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 const EventEmitter = require('events');
 
 const hull = require('hull.js');
@@ -19,6 +20,8 @@ const __candidatesBounds = new Rectangle();
 const __fenceBounds = new Rectangle();
 const __touchingColor = new Uint8ClampedArray(4);
 const __blendColor = new Uint8ClampedArray(4);
+
+import GandiShaderManager from './GandiShaderManager';
 
 // More pixels than this and we give up to the GPU and take the cost of readPixels
 // Width * Height * Number of drawables at location
@@ -226,11 +229,15 @@ class RenderWebGL extends EventEmitter {
 
         this._createGeometry();
 
+        // init GandiShaderManager
+        this._gandiShaderManager = new GandiShaderManager(gl, this._bufferInfo, this);
+
         this.on(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
 
         this.setBackgroundColor(1, 1, 1);
         this.setStageSize(xLeft || -240, xRight || 240, yBottom || -180, yTop || 180);
         this.resize(this._nativeSize[0], this._nativeSize[1]);
+
 
         gl.disable(gl.DEPTH_TEST);
         /** @todo disable when no partial transparency? */
@@ -703,11 +710,12 @@ class RenderWebGL extends EventEmitter {
             return;
         }
         this.dirty = false;
+        // console.info('draw');
 
         this._doExitDrawRegion();
 
         const gl = this._gl;
-
+        
         twgl.bindFramebufferInfo(gl, null);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(...this._backgroundColor4f);
@@ -717,6 +725,10 @@ class RenderWebGL extends EventEmitter {
             framebufferWidth: gl.canvas.width,
             framebufferHeight: gl.canvas.height
         });
+
+        // TODO: 是否要在这里后处理全局特效？
+        this.dirty |= this._gandiShaderManager.execPostProcessingRender();
+
         /**
          * 旧版：CanvasRenderReady 之前是在scratch-gui 中触发，接收的是gl.canvas 但是会导致录屏闪屏
          * 新版：从render中直接触发 CanvasRenderReady 将canvas传递至 gui 进行录屏
@@ -728,6 +740,7 @@ class RenderWebGL extends EventEmitter {
             this._snapshotCallbacks = [];
         }
     }
+
 
     /**
      * Get the precise bounds for a Drawable.
@@ -1751,6 +1764,18 @@ class RenderWebGL extends EventEmitter {
                     1, 1,
                     0, 0,
                     0, 1
+                ]
+            },
+            uv: {
+                numComponents: 2,
+                data: [
+                    1, 0,
+                    0, 0,
+                    1, 1,
+                    1, 1,
+                    0, 0,
+                    0, 1,
+                    
                 ]
             }
         };
