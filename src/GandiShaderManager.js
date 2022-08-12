@@ -17,6 +17,12 @@ class GandiShaderManager {
         this.effectors = new Map();
 
         this.postProcessing = [];
+
+        const shake = new GandiShake(gl, _bufferInfo, render);
+        this.postProcessing.push(shake);
+        this.effectors.set('shake', shake);
+        shake.bypass = true;
+        
       
         const glitch = new GandiGlitch(gl, _bufferInfo, render);
         this.postProcessing.push(glitch);
@@ -46,10 +52,7 @@ class GandiShaderManager {
         // this.effectors.set('comics', comics);
         // comics.bypass = 0;
 
-        const shake = new GandiShake(gl, _bufferInfo, render);
-        this.postProcessing.push(shake);
-        this.effectors.set('shake', shake);
-        shake.bypass = true;
+        
     }
 
     effector (name) {
