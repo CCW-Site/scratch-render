@@ -3,6 +3,7 @@ const GandiGlitch = require('./shaders/GandiGlitch');
 const GandiShadow = require('./shaders/GandiShadow');
 const GandiFilm = require('./shaders/GandiFilm');
 const GandiShake = require('./shaders/GandiShake');
+const GandiShockWave = require('./shaders/GandiShockWave');
 
 
 // const twgl = require('twgl.js');
@@ -17,15 +18,24 @@ class GandiShaderManager {
         this.effectors = new Map();
 
         this.postProcessing = [];
+
+        const shake = new GandiShake(gl, _bufferInfo, render);
+        this.postProcessing.push(shake);
+        this.effectors.set('shake', shake);
+        shake.bypass = true;
+
+        const shockWave = new GandiShockWave(gl, _bufferInfo, render);
+        this.postProcessing.push(shockWave);
+        this.effectors.set('shockWave', shockWave);
+        shockWave.bypass = true;
+        
       
         const glitch = new GandiGlitch(gl, _bufferInfo, render);
         this.postProcessing.push(glitch);
         this.effectors.set('glitch', glitch);
         glitch.bypass = 1;
 
-        // const shockWave = new GandiShockWave(gl, _bufferInfo, render);
-        // this.postProcessing.push(shockWave);
-        // this.effectors.set('shockWave', shockWave);
+
 
         // const bloom = new GandiBloom(gl, _bufferInfo, render);
         // this.postProcessing.push(bloom);
@@ -46,10 +56,7 @@ class GandiShaderManager {
         // this.effectors.set('comics', comics);
         // comics.bypass = 0;
 
-        const shake = new GandiShake(gl, _bufferInfo, render);
-        this.postProcessing.push(shake);
-        this.effectors.set('shake', shake);
-        shake.bypass = true;
+        
     }
 
     effector (name) {

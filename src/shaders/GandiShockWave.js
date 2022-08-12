@@ -1,34 +1,36 @@
-/* eslint-disable no-tabs */
+/* eslint-disable */
+const GandiShader = require('./GandiShader');
 const twgl = require('twgl.js');
 
-class GandiShockWave {
+class GandiShockWave extends GandiShader {
   constructor (gl, bufferInfo, render){
-    this._gl = gl;
-    this._bufferInfo = bufferInfo;
-    this._render = render;
-    this._program = twgl.createProgramInfo(gl, [GandiShockWave.vertexShader, GandiShockWave.fragmentShader]);
-    this.dirty = false;
-}
+    super(gl, bufferInfo, render, GandiShockWave.vertexShader, GandiShockWave.fragmentShader);
+    this.uniforms = GandiShockWave.uniforms;
+    this.time = 3;
+    this.step = 0.05;
+  }
 
     static get uniforms (){
         return {
-          active: true,
           center: [0.5, 0.5],
-          waveSize: 0.3,
+          waveSize: 0.1,
+          tDiffuse: null,
           radius: 0.2,
-          maxRadius: 1,
-          amplitude: 0.05
+          amplitude: 0.1,
+          decay:0.01,
+          time:3,
         };
     }
 
     static get vertexShader (){
         return /* glsl */`
-varying float vSize;
-attribute vec2 uv;
 varying vec2 vUv;
+attribute vec2 a_position;
+attribute vec2 uv;
+attribute vec2 a_texCoord;
 void main() {
-	vSize = 0.1;
-  vUv = uv;
+  vUv = uv; 
+  gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
 }
 `;
     }
@@ -38,57 +40,85 @@ void main() {
 #ifdef GL_ES
 precision mediump float;
 #endif
-uniform bool active;
+uniform bool byp;
 uniform vec2 center;
 uniform float waveSize;
 uniform float radius;
-uniform float maxRadius;
 uniform float amplitude;
+uniform float time;
 
-varying float vSize;
+uniform sampler2D tDiffuse;
 varying vec2 vUv;
 
+#define _PI 3.1415926535897932384626433832795
+
+
+vec2 getPixelShift(vec2 center,vec2 pixelpos,float startradius,float size,float shockfactor, in vec2 fragCoord)
+{
+	float m_distance = distance(center,pixelpos);
+	if( m_distance > startradius && m_distance < startradius+size )
+	{
+		float sin_dist = sin((m_distance -startradius)/size* _PI )*shockfactor;
+		return ( pixelpos - normalize(pixelpos-center)*sin_dist )/ vec2(1,1);
+	}
+	else 
+		return fragCoord.xy / vec2(1,1);
+}
 void main() {
   vec2 uv = vUv;
-	if(active) {
+	if(!byp) {
+    vec2 shift = getPixelShift(center,uv.xy,time,waveSize,amplitude,uv);
 
-		vec2 aspectCorrection = vec2(1.0, 1.0);
-		vec2 difference = uv * aspectCorrection - center * aspectCorrection;
-		float distance = sqrt(dot(difference, difference)) * vSize;
-
-		if(distance > radius) {
-
-			if(distance < radius + waveSize) {
-
-				float angle = (distance - radius) * 3.14 / waveSize;
-				float cosSin = (1.0 - cos(angle)) * 0.5;
-
-				float extent = maxRadius + waveSize;
-				float decay = max(extent - distance * distance, 0.0) / extent;
-
-				uv -= ((cosSin * amplitude * difference) / distance) * decay;
-
-			}
-
-		}
-    gl_FragColor = vec4(uv, 0.0, 1.0);
+    gl_FragColor = texture2D( tDiffuse, shift );
 	} else {
-    gl_FragColor=vec4(uv, 0.0, 1.0);
+    gl_FragColor = texture2D(tDiffuse, vUv);
   }
-
 }
 `;
     }
 
-    render (){
-      let dirty = this.dirty;
-      this._gl.useProgram(this._program.program);
-      twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
-      twgl.setUniforms(this._program, GandiShockWave.uniforms);
+    drop(x, y, amplitude = 0.1, waveSize = 0.1, decay = 0.01, step = 0.05){
+      this.time = 0;
+      this.step = step;
+      this.uniforms.center = [x, y];
+      this.uniforms.amplitude = amplitude;
+      this.uniforms.waveSize = waveSize;
+      this.uniforms.decay = decay;
+      this.uniforms.bypass = false;
       this.dirty = true;
-      dirty = true;
+      this._render.dirty = true;
+    }
 
-      twgl.drawBufferInfo(this._gl, this._bufferInfo);
+    render (){
+      this.time += this.step;
+      if (this.bypass > 0) {
+        return false;
+      }
+
+      if (this.time > 1) {
+        this.uniforms.bypass = true;
+        return false;
+      }
+
+      this.uniforms.amplitude -= this.uniforms.decay / 3.0;
+      this.uniforms.amplitude = Math.max(this.uniforms.amplitude, 0);
+      this.uniforms.waveSize -= this.uniforms.decay;
+
+      const gl = this._gl;
+      super.render();
+      const textureDiff = twgl.createTexture(gl, {
+        src: gl.canvas
+      });
+      twgl.setUniforms(this._program, {
+        tDiffuse:textureDiff,
+        time:this.time,
+      });
+  
+      twgl.drawBufferInfo(gl, this._bufferInfo);
+
+      // console.info('render');
+      this.dirty = true;
+      let dirty =  this.dirty;
       return dirty;
     }
 }
