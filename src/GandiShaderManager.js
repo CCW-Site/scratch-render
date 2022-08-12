@@ -24,17 +24,18 @@ class GandiShaderManager {
         this.effectors.set('shake', shake);
         shake.bypass = true;
 
+        const shockWave = new GandiShockWave(gl, _bufferInfo, render);
+        this.postProcessing.push(shockWave);
+        this.effectors.set('shockWave', shockWave);
+        shockWave.bypass = true;
+        
       
         const glitch = new GandiGlitch(gl, _bufferInfo, render);
         this.postProcessing.push(glitch);
         this.effectors.set('glitch', glitch);
         glitch.bypass = 1;
 
-        const shockWave = new GandiShockWave(gl, _bufferInfo, render);
-        this.postProcessing.push(shockWave);
-        this.effectors.set('shockWave', shockWave);
-        shockWave.bypass = false;
-        window.sw = shockWave;
+
 
         // const bloom = new GandiBloom(gl, _bufferInfo, render);
         // this.postProcessing.push(bloom);
