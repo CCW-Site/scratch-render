@@ -9,14 +9,16 @@
  * angle: shift angle in radians
  */
 const twgl = require('twgl.js');
-import {
-    DataTexture,
-    FloatType,
-    MathUtils,
-    RedFormat
-} from 'three';
+// import {
+//     DataTexture,
+//     FloatType,
+//     MathUtils,
+//     RedFormat
+// } from 'three';
 
-export default class GandiGlitch {
+const {DataTexture, FloatType, MathUtils, RedFormat} = require('three');
+
+class GandiGlitch {
 	
 
     constructor (gl, bufferInfo, render){
@@ -196,3 +198,4 @@ precision mediump float;
     }
 
 }
+module.exports = GandiGlitch;

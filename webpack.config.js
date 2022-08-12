@@ -14,8 +14,7 @@ const base = {
         rules: [
             {
                 include: [
-                    path.resolve('src'),
-                    path.resolve('src/doc')
+                    path.resolve('src')
                 ],
                 test: /\.js$/,
                 loader: 'babel-loader',

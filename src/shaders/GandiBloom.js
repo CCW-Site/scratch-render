@@ -1,7 +1,7 @@
 /* eslint-disable no-tabs */
 const twgl = require('twgl.js');
 
-export default class GandiBloom {
+class GandiBloom {
   constructor (gl, bufferInfo, render){
     this._gl = gl;
     this._bufferInfo = bufferInfo;
@@ -80,3 +80,4 @@ void main() {
       return dirty;
     }
 }
+module.exports = GandiBloom;

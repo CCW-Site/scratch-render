@@ -1,11 +1,10 @@
-import GandiGlitch from './shaders/GandiGlitch';
-import GandiShockWave from './shaders/GandiShockWave';
-import GandiBloom from './shaders/GandiBloom';
-import GandiShadow from './shaders/GandiShadow';
-import GandiFilm from './shaders/GandiFilm';
-import GandiComics from './shaders/GandiComics';
+const GandiGlitch = require('./shaders/GandiGlitch');
 
-const twgl = require('twgl.js');
+const GandiShadow = require('./shaders/GandiShadow');
+const GandiFilm = require('./shaders/GandiFilm');
+
+
+// const twgl = require('twgl.js');
 
 // stage > partial system > post processing
 // TODO: impliment a pipeline to run post effectors
@@ -60,4 +59,4 @@ class GandiShaderManager {
     }
   
 }
-export default GandiShaderManager;
+module.exports = GandiShaderManager;

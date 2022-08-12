@@ -1,10 +1,11 @@
 /* eslint-disable */
 const twgl = require('twgl.js');
-import GLSLCommon from './GandiGLSLCommon';
+// import { common } from './GandiGLSLCommon';
+const { common } = require('./GandiGLSLCommon');
 
 const TIMESTEP = 0.01;
 
-export default class GandiFilm {
+class GandiFilm {
     constructor (gl, bufferInfo, render){
         this._gl = gl;
         this._bufferInfo = bufferInfo;
@@ -43,7 +44,7 @@ void main() {
     }
 
     static get fragmentShader () {
-        return /* glsl */ GLSLCommon + `
+        return /* glsl */ common + `
 #ifdef GL_ES
 precision mediump float;
 #endif
@@ -121,3 +122,5 @@ void main() {
         return dirty;
     }
 }
+
+module.exports = GandiFilm;
