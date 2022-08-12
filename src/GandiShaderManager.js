@@ -2,6 +2,7 @@ const GandiGlitch = require('./shaders/GandiGlitch');
 
 const GandiShadow = require('./shaders/GandiShadow');
 const GandiFilm = require('./shaders/GandiFilm');
+const GandiShake = require('./shaders/GandiShake');
 
 
 // const twgl = require('twgl.js');
@@ -33,17 +34,22 @@ class GandiShaderManager {
         const shadow = new GandiShadow(gl, _bufferInfo, render);
         this.postProcessing.push(shadow);
         this.effectors.set('shadow', shadow);
-        shadow.bypass = 1;
+        shadow.bypass = true;
 
         const film = new GandiFilm(gl, _bufferInfo, render);
         this.postProcessing.push(film);
         this.effectors.set('film', film);
-        film.bypass = 1;
+        film.bypass = true;
 
         // const comics = new GandiComics(gl, _bufferInfo, render);
         // this.postProcessing.push(comics);
         // this.effectors.set('comics', comics);
         // comics.bypass = 0;
+
+        const shake = new GandiShake(gl, _bufferInfo, render);
+        this.postProcessing.push(shake);
+        this.effectors.set('shake', shake);
+        shake.bypass = true;
     }
 
     effector (name) {
