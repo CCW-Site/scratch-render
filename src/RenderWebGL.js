@@ -21,7 +21,7 @@ const __fenceBounds = new Rectangle();
 const __touchingColor = new Uint8ClampedArray(4);
 const __blendColor = new Uint8ClampedArray(4);
 
-import GandiShaderManager from './GandiShaderManager';
+const GandiShaderManager = require('./GandiShaderManager');
 
 // More pixels than this and we give up to the GPU and take the cost of readPixels
 // Width * Height * Number of drawables at location

@@ -1,4 +1,4 @@
-export default `
+const common = `
 #ifdef GL_ES
 precision mediump float;
 #endif
@@ -82,3 +82,4 @@ vec2 equirectUv( in vec3 dir ) {
 	float v = asin( clamp( dir.y, - 1.0, 1.0 ) ) * RECIPROCAL_PI + 0.5;
 	return vec2( u, v );
 }`;
+module.exports = { common };
