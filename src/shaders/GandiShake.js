@@ -14,7 +14,6 @@ class GandiShake extends GandiShader{
     this.skip = 1;
     this.offset =  [ 1, 1];
     this.bypass = true;
-    window.shake = this;
   }
 
   shake(x, y, step = 0.05, skip = 1){

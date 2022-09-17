@@ -1,22 +1,20 @@
-/* eslint-disable no-tabs */
+/* eslint-disable */
 const twgl = require('twgl.js');
+const GandiShader = require('./GandiShader');
 
-class GandiBloom {
+class GandiBloom extends GandiShader {
   constructor (gl, bufferInfo, render){
-    this._gl = gl;
-    this._bufferInfo = bufferInfo;
-    this._render = render;
-    this._program = twgl.createProgramInfo(gl, [GandiBloom.vertexShader, GandiBloom.fragmentShader]);
-    this.dirty = false;
+    super(gl, bufferInfo, render, GandiBloom.vertexShader, GandiBloom.fragmentShader);
+    this.uniforms = GandiBloom.uniforms;
+    this.dirty = false; // default turned off
 }
 
     static get uniforms (){
         return {
           tDiffuse: null,
-          luminosityThreshold: .2,
-          smoothWidth: 1.0,
-          defaultColor: [0, 0, 0],
-          defaultOpacity: .5
+          threshold: .2,
+          intensity: 1.0,
+          blurSize: 10.0,
         };
     }
 
@@ -38,39 +36,80 @@ void main() {
 #ifdef GL_ES
 precision mediump float;
 #endif
-
+uniform float threshold;
+uniform float intensity;
+uniform float blurSize;
 uniform sampler2D tDiffuse;
-uniform vec3 defaultColor;
-uniform float defaultOpacity;
-uniform float luminosityThreshold;
-uniform float smoothWidth;
 varying vec2 vUv;
-void main() {
-  vec4 texel = texture2D( tDiffuse, vUv );
-  vec3 luma = vec3( 0.299, 0.587, 0.114 );
-  float v = dot( texel.xyz, luma );
-  vec4 outputColor = vec4( defaultColor.rgb, defaultOpacity );
-  float alpha = smoothstep( luminosityThreshold, luminosityThreshold + smoothWidth, v );
-  gl_FragColor = mix( outputColor, texel, alpha );
+
+vec3 makeBloom(float lod, vec2 offset, vec2 bCoord, sampler2D tex){
+    
+  vec2 pixelSize = 1.0 / vec2(1.0, 1.0);
+
+  offset += pixelSize;
+
+  float lodFactor = exp2(lod);
+
+  vec3 bloom = vec3(0.0);
+  vec2 scale = lodFactor * pixelSize;
+
+  vec2 coord = (bCoord.xy-offset)*lodFactor;
+  float totalWeight = 0.0;
+
+  if (any(greaterThanEqual(abs(coord - 0.5), scale + 0.5)))
+      return vec3(0.0);
+
+  for (int i = -5; i < 5; i++) {
+      for (int j = -5; j < 5; j++) {
+
+          float wg = pow(1.0-length(vec2(i,j)) * 0.125,6.0);
+
+          bloom = pow(texture2D(tex,vec2(i,j) * scale + lodFactor * pixelSize + coord, lod).rgb,vec3(2.2))*wg + bloom;
+          totalWeight += wg;
+
+      }
+  }
+
+  bloom /= totalWeight;
+
+  return bloom;
+}
+
+
+void main( )
+{
+	vec2 uv = vUv;
+  // vec3 blur = makeBloom(2.,vec2(0.0,0.0), uv,tDiffuse);
+		// blur += makeBloom(3.,vec2(0.3,0.0), uv,tDiffuse);
+		// blur += makeBloom(4.,vec2(0.0,0.3), uv,tDiffuse);
+		// blur += makeBloom(5.,vec2(0.1,0.3), uv,tDiffuse);
+		// blur += makeBloom(6.,vec2(0.2,0.3), uv,tDiffuse);
+  vec4 color = texture2D(tDiffuse, uv);
+
+    // gl_FragColor = vec4(pow(blur, vec3(1.0 / 2.2)),1.0);
+    gl_FragColor = color + color;
+
+   // gl_FragColor = 1.0-(1.0-Color)*(1.0-Highlight*intensity); //Screen Blend Mode
 }
 
 `;
     }
 
     render (){
+      if (this.bypass > 0) {
+        return false;
+      }
+      super.render();
+
       let dirty = this.dirty;
-      this._gl.useProgram(this._program.program);
-      twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
-      twgl.setUniforms(this._program, GandiBloom.uniforms);
+      const gl = this._gl;
 
-
-      const textureDiff = twgl.createTexture(this._gl, {
-        src: this._gl.canvas
-    });
+      const textureDiff = twgl.createTexture(gl, {
+        src: gl.canvas
+      });
       twgl.setUniforms(this._program, {
+        byp: this.bypass,
         tDiffuse: textureDiff,
-        // defaultColor: [1.0, 0.0, 1.0],
-
       });
 
       this.dirty = true;

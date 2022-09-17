@@ -4,6 +4,8 @@ const GandiShadow = require('./shaders/GandiShadow');
 const GandiFilm = require('./shaders/GandiFilm');
 const GandiShake = require('./shaders/GandiShake');
 const GandiShockWave = require('./shaders/GandiShockWave');
+const GandiBloom = require('./shaders/GandiBloom');
+const GandiShaderLoader = require('./shaders/GandiShaderLoader');
 
 
 // const twgl = require('twgl.js');
@@ -11,52 +13,69 @@ const GandiShockWave = require('./shaders/GandiShockWave');
 // stage > partial system > post processing
 // TODO: impliment a pipeline to run post effectors
 class GandiShaderManager {
+    static get version () {
+        return '1.0';
+    }
     constructor (gl, _bufferInfo, render) {
         this._gl = gl;
         this._bufferInfo = _bufferInfo;
         this._render = render;
         this.effectors = new Map();
-
         this.postProcessing = [];
+    }
 
-        const shake = new GandiShake(gl, _bufferInfo, render);
-        this.postProcessing.push(shake);
-        this.effectors.set('shake', shake);
-        shake.bypass = true;
+    unregister (name) {
+        if (this.effectors.has(name)) {
+            const oldEffector = this.effectors.get(name);
+            oldEffector.bypass = 1;
+            const newPP = this.postProcessing.filter(pp => pp !== oldEffector);
+            this.postProcessing = newPP;
+            this.effectors.delete(name);
+        }
+    }
 
-        const shockWave = new GandiShockWave(gl, _bufferInfo, render);
-        this.postProcessing.push(shockWave);
-        this.effectors.set('shockWave', shockWave);
-        shockWave.bypass = true;
+    register (name, bypass = true, vertex = null, frag = null, uniforms = {}, renderLoop = null, config = {}) {
+        let effector;
+        if (vertex === null && frag === null){
+            // load default
+            switch (name) {
+            case 'glitch':
+                effector = new GandiGlitch(this._gl, this._bufferInfo, this._render);
+                break;
+            case 'film':
+                effector = new GandiFilm(this._gl, this._bufferInfo, this._render);
+                break;
+            case 'shadow':
+                effector = new GandiShadow(this._gl, this._bufferInfo, this._render);
+                break;
+            case 'shake':
+                effector = new GandiShake(this._gl, this._bufferInfo, this._render);
+                break;
+            case 'shockwave':
+                effector = new GandiShockWave(this._gl, this._bufferInfo, this._render);
+                break;
+            case 'bloom':
+                effector = new GandiBloom(this._gl, this._bufferInfo, this._render);
+                break;
+            default:
+                // no vertex & frag, and not founded in default effector
+                return null;
+            }
+        } else {
+            effector = new GandiShaderLoader(
+                this._gl, this._bufferInfo, this._render,
+                vertex, frag, uniforms, renderLoop, config);
+        }
         
-      
-        const glitch = new GandiGlitch(gl, _bufferInfo, render);
-        this.postProcessing.push(glitch);
-        this.effectors.set('glitch', glitch);
-        glitch.bypass = 1;
+        this.unregister(name);
 
-
-
-        // const bloom = new GandiBloom(gl, _bufferInfo, render);
-        // this.postProcessing.push(bloom);
-        // this.effectors.set('bloom', bloom);
-
-        const shadow = new GandiShadow(gl, _bufferInfo, render);
-        this.postProcessing.push(shadow);
-        this.effectors.set('shadow', shadow);
-        shadow.bypass = true;
-
-        const film = new GandiFilm(gl, _bufferInfo, render);
-        this.postProcessing.push(film);
-        this.effectors.set('film', film);
-        film.bypass = true;
-
-        // const comics = new GandiComics(gl, _bufferInfo, render);
-        // this.postProcessing.push(comics);
-        // this.effectors.set('comics', comics);
-        // comics.bypass = 0;
-
-        
+        effector.bypass = bypass;
+        if (!bypass) {
+            effector.dirty = true;
+        }
+        this.postProcessing.push(effector);
+        this.effectors.set(name, effector);
+        return effector;
     }
 
     effector (name) {
