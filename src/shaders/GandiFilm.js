@@ -118,7 +118,7 @@ void main() {
         dirty = true;
 
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
-
+        this._gl.deleteTexture(texture);
         return dirty;
     }
 }

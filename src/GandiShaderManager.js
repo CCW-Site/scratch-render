@@ -13,10 +13,8 @@ const GandiShaderLoader = require('./shaders/GandiShaderLoader');
 // stage > partial system > post processing
 // TODO: impliment a pipeline to run post effectors
 class GandiShaderManager {
-    static get version () {
-        return '1.0';
-    }
     constructor (gl, _bufferInfo, render) {
+        this._version = '1.0.1';
         this._gl = gl;
         this._bufferInfo = _bufferInfo;
         this._render = render;

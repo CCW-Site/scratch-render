@@ -60,8 +60,9 @@ gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
       byp: this.bypass,
     });
 
+    let textureDiff = undefined;
     if (this.config.passTexture) {
-      const textureDiff = twgl.createTexture(gl, {
+      textureDiff = twgl.createTexture(gl, {
         src: gl.canvas
       });
       twgl.setUniforms(this._program, {
@@ -80,6 +81,9 @@ gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
     twgl.drawBufferInfo(gl, this._bufferInfo);
 
     // console.info('render');
+    if (textureDiff) {
+      this._gl.deleteTexture(textureDiff);
+    }
     this.dirty = true;
     let dirty =  this.dirty;
     return dirty;
