@@ -95,6 +95,9 @@ void main() {
 
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
 
+        this._gl.deleteTexture(this.tOld);
+        this._gl.deleteTexture(this.tNew);
+
         this.tOld = twgl.createTexture(this._gl, {
           src: this._gl.canvas
         });

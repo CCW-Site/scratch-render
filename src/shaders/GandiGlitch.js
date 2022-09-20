@@ -194,6 +194,8 @@ precision mediump float;
 						this.dirty = false;
         }
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
+				this._gl.deleteTexture(texture);
+				this._gl.deleteTexture(textureDiff);
         return dirty;
     }
 

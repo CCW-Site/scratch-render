@@ -104,6 +104,8 @@ class GandiShake extends GandiShader{
 
     twgl.drawBufferInfo(gl, this._bufferInfo);
 
+    this._gl.deleteTexture(textureDiff);
+
     dirty = true;
     this.dirty = dirty;
 

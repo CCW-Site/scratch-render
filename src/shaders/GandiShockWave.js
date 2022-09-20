@@ -116,6 +116,8 @@ void main() {
   
       twgl.drawBufferInfo(gl, this._bufferInfo);
 
+      this._gl.deleteTexture(textureDiff);
+
       // console.info('render');
       this.dirty = true;
       let dirty =  this.dirty;
