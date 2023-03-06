@@ -11,6 +11,7 @@ const PenSkin = require('./PenSkin');
 const RenderConstants = require('./RenderConstants');
 const ShaderManager = require('./ShaderManager');
 const SVGSkin = require('./SVGSkin');
+const Skin = require('./Skin');
 const TextBubbleSkin = require('./TextBubbleSkin');
 const EffectTransform = require('./EffectTransform');
 const log = require('./util/log');
@@ -243,6 +244,13 @@ class RenderWebGL extends EventEmitter {
         /** @todo disable when no partial transparency? */
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    }
+
+    /**
+     * @return {Skin} the Skin class, which is used for extensions.
+     */
+    getSkinClass () {
+        return Skin;
     }
 
     // tw: implement high quality pen option
@@ -1618,7 +1626,7 @@ class RenderWebGL extends EventEmitter {
         let y = position[1];
 
         const drawable = this._allDrawables[drawableID];
-        if (!drawable) {
+        if (!drawable || !drawable._skin) {
             // @todo(https://github.com/LLK/scratch-vm/issues/2288) fix whatever's wrong in the VM which causes this, then add a warning or throw here.
             // Right now this happens so much on some projects that a warning or exception here can hang the browser.
             return [x, y];
