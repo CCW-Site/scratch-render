@@ -19,12 +19,12 @@ gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
 
   constructor (gl, bufferInfo, render, vertex, fragment, uniforms, renderLoop = undefined, config = { passTexture : false, useTimer : false , step: 1 }){
     let vert = vertex || GandiShaderLoader.vertexShader;
-    if (vert.indexOf('//') != 0) {
+    if (!(vert.indexOf('//') == 0 || vert.indexOf('#version') == 0)) {
       // compressed
       vert = LZString.decompressFromUTF16(vert) || vert;
     }
     let frag = fragment;
-    if (frag.indexOf('//') != 0) {
+    if (!(frag.indexOf('//') == 0 || frag.indexOf('#version') == 0)) {
       // compressed
       frag = LZString.decompressFromUTF16(frag) || frag;
     }

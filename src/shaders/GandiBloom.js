@@ -11,7 +11,7 @@ class GandiBloom extends GandiShader {
 
     static get uniforms (){
         return {
-          tDiffuse: null,
+          tDiffuse: 0,
           threshold: .2,
           intensity: 1.0,
           blurSize: 10.0,

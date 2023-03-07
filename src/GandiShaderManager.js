@@ -14,12 +14,18 @@ const GandiShaderLoader = require('./shaders/GandiShaderLoader');
 // TODO: impliment a pipeline to run post effectors
 class GandiShaderManager {
     constructor (gl, _bufferInfo, render) {
-        this._version = '1.0.1';
+        // for debug: print current date time and version to console
+        // console.log(`GandiShaderManager ${new Date().toLocaleString()} v1.0.1`);
+        this._version = '1.0.2';
         this._gl = gl;
         this._bufferInfo = _bufferInfo;
         this._render = render;
         this.effectors = new Map();
         this.postProcessing = [];
+
+        // Test shake effector
+        // this.register('shake', false);
+        // this.register('shadow', false);
     }
 
     unregister (name) {

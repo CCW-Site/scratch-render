@@ -14,7 +14,7 @@ class GandiShockWave extends GandiShader {
         return {
           center: [0.5, 0.5],
           waveSize: 0.1,
-          tDiffuse: null,
+          tDiffuse: 0,
           radius: 0.2,
           amplitude: 0.1,
           decay:0.01,
