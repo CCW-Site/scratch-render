@@ -15,8 +15,8 @@ class GandiShadow {
     static get uniforms (){
         return {
             byp: 1,
-            tOld: null,
-            tNew: null,
+            tOld: 0, 
+            tNew: 0,
             damp: .9,
         };
     }
@@ -71,13 +71,15 @@ void main() {
         twgl.setUniforms(this._program, GandiShadow.uniforms);
 
 
-        if (this.tOld === null) {
+        if (this.tOld === undefined) {
           this.tOld = twgl.createTexture(this._gl, {
+            // target: this._gl.TEXTURE_2D,
             src: this._gl.canvas
           });
         }
         
         this.tNew = twgl.createTexture(this._gl, {
+          // target: this._gl.TEXTURE_2D,
           src: this._gl.canvas
         });
         
@@ -87,8 +89,9 @@ void main() {
             damp: this.damp,
             byp: this.bypass,
             // defaultColor: [1.0, 0.0, 1.0],
-
         });
+
+        
 
         this.dirty = true;
         dirty = true;

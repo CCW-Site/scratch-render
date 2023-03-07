@@ -23,6 +23,7 @@ const __touchingColor = new Uint8ClampedArray(4);
 const __blendColor = new Uint8ClampedArray(4);
 
 const GandiShaderManager = require('./GandiShaderManager');
+// const GandiMultiPass = require('./shaders/GandiMultiPass');
 
 // More pixels than this and we give up to the GPU and take the cost of readPixels
 // Width * Height * Number of drawables at location
@@ -124,8 +125,11 @@ class RenderWebGL extends EventEmitter {
         // getWebGLContext = try WebGL 1.0 only
         // getContext = try WebGL 2.0 and if that doesn't work, try WebGL 1.0
         // getWebGLContext || getContext = try WebGL 1.0 and if that doesn't work, try WebGL 2.0
-        return twgl.getWebGLContext(canvas, contextAttribs) ||
-            twgl.getContext(canvas, contextAttribs);
+        // TODO: try GL2 first @Shawn
+        // return twgl.getWebGLContext(canvas, contextAttribs) ||
+        //    twgl.getContext(canvas, contextAttribs);
+        // console.info("Using WebGL 2.0?");
+        return twgl.getContext(canvas, contextAttribs);
     }
 
     /**
@@ -1947,6 +1951,32 @@ class RenderWebGL extends EventEmitter {
         }
 
         this._regionId = null;
+    }
+
+    createImageFromTexture(gl, texture, width, height) {
+        // Create a framebuffer backed by the texture
+        var framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    
+        // Read the contents of the framebuffer
+        var data = new Uint8Array(width * height * 4);
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+    
+        gl.deleteFramebuffer(framebuffer);
+    
+        // Create a 2D canvas to store the result 
+        var canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        var context = canvas.getContext('2d');
+    
+        // Copy the pixels to a 2D canvas
+        var imageData = context.createImageData(width, height);
+        imageData.data.set(data);
+        context.putImageData(imageData, 0, 0);
+    
+        return canvas.toDataURL();
     }
 
     /**

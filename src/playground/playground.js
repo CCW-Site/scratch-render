@@ -44,6 +44,7 @@ xhr.addEventListener('load', () => {
         renderer.updateDrawableProperties(drawableID2, {
             skinId: skinId
         });
+        //spector.stopCapture();
     }
 });
 xhr.open('GET', 'https://m.xiguacity.cn/user_projects_assets/fa07bb0dea8397e9452f427e817afde8.svg');

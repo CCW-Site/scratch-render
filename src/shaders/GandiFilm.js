@@ -21,7 +21,7 @@ class GandiFilm {
     static get uniforms (){
         return {
             byp: 1,
-            tDiffuse: null,
+            tDiffuse: 0,
             time: 0.0,
             nIntensity: 0.15,
             sIntensity: 0.05,
@@ -110,7 +110,7 @@ void main() {
             time: this.time,
             byp : this.bypass,
             // grayscale: this.grayscale || false,
-            tDiffuse: texture,
+            tDiffuse: texture || 0,
 
         });
 

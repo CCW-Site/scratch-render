@@ -49,8 +49,8 @@ class GandiGlitch {
 
     static get uniforms (){
         return {
-            tDiffuse: null, // diffuse texture
-            tDisp: null, // displacement texture for digital glitch squares
+            tDiffuse: 0, // diffuse texture
+            tDisp: 0, // displacement texture for digital glitch squares
             byp: 0, // apply the glitch ?
             amount: 0.08,
             angle: 0.02,
@@ -175,8 +175,8 @@ precision mediump float;
         twgl.setUniforms(this._program, this._uniforms);
         twgl.setUniforms(this._program, {
             byp: this.bypass,
-            tDisp: texture,
-            tDiffuse: textureDiff,
+            tDisp: texture || 0,
+            tDiffuse: textureDiff || 0,
             amount: Math.random() / this.options.amount,
             seed_x: MathUtils.randFloat(-1, 1),
             seed_y: MathUtils.randFloat(-1, 1),

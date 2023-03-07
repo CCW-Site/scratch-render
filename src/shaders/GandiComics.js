@@ -17,7 +17,7 @@ class GandiComics {
     static get uniforms (){
         return {
             byp: 1,
-            tDiffuse: null,
+            tDiffuse: 0,
             tSize: [256, 256],
             center: [0.5, 0.5],
             angle: 1.56,
@@ -81,7 +81,7 @@ void main() {
         });
         
         twgl.setUniforms(this._program, {
-            tDiffuse: texture,
+            tDiffuse: texture || 0,
         });
 
         this.dirty = true;
