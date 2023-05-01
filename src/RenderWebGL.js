@@ -1928,6 +1928,16 @@ class RenderWebGL extends EventEmitter {
                     u_projectionMatrix: projection
                 });
             }
+            // if drawable has its own project, use it
+            if (drawable.customizedProjection && drawMode !== 'straightAlpha') {
+                Object.assign(uniforms, {
+                    u_projectionMatrix: drawable.customizedProjection
+                });
+            } else {
+                Object.assign(uniforms, {
+                    u_projectionMatrix: projection
+                });
+            }
 
             Object.assign(uniforms,
                 drawable.skin.getUniforms(drawableScale),
