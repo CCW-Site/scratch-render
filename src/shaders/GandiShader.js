@@ -2,7 +2,7 @@
 const twgl = require('twgl.js');
 
 class GandiShader {
-    constructor (gl, bufferInfo, render, vert, frag){
+    constructor(gl, bufferInfo, render, vert, frag) {
         this._gl = gl;
         this._bufferInfo = bufferInfo;
         this._render = render;
@@ -11,12 +11,12 @@ class GandiShader {
         this.bypass = 1;
     }
 
-    static get uniforms (){
+    static get uniforms () {
         return {
         };
     }
 
-    static get vertexShader (){
+    static get vertexShader () {
         return /* glsl */`
 `;
     }
@@ -29,15 +29,18 @@ precision mediump float;
 `;
     }
 
-    __setupProgram (){
-      this._gl.useProgram(this._program.program);
-      twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
-      twgl.setUniforms(this._program, this.uniforms);
+    __setupProgram () {
+        this._gl.useProgram(this._program.program);
+        twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
+        twgl.setUniforms(this._program, this.uniforms);
     }
 
-    render (){
-        if(this.bypass > 0){
-          return false;
+    render () {
+        if (!this._program) {
+            console.warn('[Gandi Render]: GandiShader program is ', this._program);
+        }
+        if (this.bypass > 0) {
+            return false;
         }
         this.__setupProgram();
 

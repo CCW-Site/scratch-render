@@ -1,12 +1,12 @@
 /* eslint-disable */
 const twgl = require('twgl.js');
 // import { common } from './GandiGLSLCommon';
-const { common } = require('./GandiGLSLCommon');
+const {common} = require('./GandiGLSLCommon');
 
 const TIMESTEP = 0.01;
 
 class GandiFilm {
-    constructor (gl, bufferInfo, render){
+    constructor(gl, bufferInfo, render) {
         this._gl = gl;
         this._bufferInfo = bufferInfo;
         this._render = render;
@@ -15,10 +15,10 @@ class GandiFilm {
         this.dirty = false;
         this.bypass = 1;
         this.time = 0.1;
-       
+
     }
 
-    static get uniforms (){
+    static get uniforms () {
         return {
             byp: 1,
             tDiffuse: 0,
@@ -30,7 +30,7 @@ class GandiFilm {
         };
     }
 
-    static get vertexShader (){
+    static get vertexShader () {
         return /* glsl */`
 varying vec2 vUv;
 attribute vec2 a_position;
@@ -49,7 +49,7 @@ void main() {
 precision mediump float;
 #endif
 
-uniform int byp; 
+uniform int byp;
 
 uniform float time;
 uniform bool grayscale;
@@ -90,25 +90,28 @@ void main() {
 `;
     }
 
-    render (){
-        if(this.bypass > 0){
-          return false;
+    render () {
+        if (!this._program) {
+            console.warn('[Gandi Render]: GandiFilm shader program is ', this._program);
+        }
+        if (this.bypass > 0) {
+            return false;
         }
         let dirty = this.dirty;
         this.time += TIMESTEP;
-        
+
         this._gl.useProgram(this._program.program);
         twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
         twgl.setUniforms(this._program, this.uniforms);
-        
+
 
         const texture = twgl.createTexture(this._gl, {
-          src: this._gl.canvas
+            src: this._gl.canvas
         });
-        
+
         twgl.setUniforms(this._program, {
             time: this.time,
-            byp : this.bypass,
+            byp: this.bypass,
             // grayscale: this.grayscale || false,
             tDiffuse: texture || 0,
 

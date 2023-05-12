@@ -19,35 +19,33 @@ const twgl = require('twgl.js');
 const {DataTexture, FloatType, MathUtils, RedFormat} = require('three');
 
 class GandiGlitch {
-	
-
-    constructor (gl, bufferInfo, render){
+    constructor(gl, bufferInfo, render) {
         this._gl = gl;
         this._bufferInfo = bufferInfo;
-				this._render = render;
+        this._render = render;
         this._program = twgl.createProgramInfo(gl, [GandiGlitch.vertexShader, GandiGlitch.fragmentShader]);
-				this._uniforms = GandiGlitch.uniforms;
+        this._uniforms = GandiGlitch.uniforms;
         this._duration = 0;
-				this.dirty = false;
-				this.bypass = 0;
-				// window.glitch = this;
-				this.options = {
-					amount: 100.0,
-					distortion: 1.0,
-				};
+        this.dirty = false;
+        this.bypass = 0;
+        // window.glitch = this;
+        this.options = {
+            amount: 100.0,
+            distortion: 1.0,
+        };
     }
 
-		set duration (d = 10){
-			this._duration = d;
-			this.dirty = true;
-			this._render.dirty = true;
-		}
+    set duration (d = 10) {
+        this._duration = d;
+        this.dirty = true;
+        this._render.dirty = true;
+    }
 
-		get duration(){
-			return this._duration;
-		}
+    get duration () {
+        return this._duration;
+    }
 
-    static get uniforms (){
+    static get uniforms () {
         return {
             tDiffuse: 0, // diffuse texture
             tDisp: 0, // displacement texture for digital glitch squares
@@ -63,7 +61,7 @@ class GandiGlitch {
         };
     }
 
-    static get vertexShader (){
+    static get vertexShader () {
         return /* glsl */`
 		varying vec2 vUv;
 		attribute vec2 a_position;
@@ -76,7 +74,7 @@ class GandiGlitch {
 		}`;
     }
 
-    static get fragmentShader() {
+    static get fragmentShader () {
         return /* glsl */`
 		#ifdef GL_ES
 precision mediump float;
@@ -143,7 +141,7 @@ precision mediump float;
         for (let i = 0; i < length; i++) {
 
             const val = MathUtils.randFloat(0, 1);
-            dataArr[ i ] = val;
+            dataArr[i] = val;
 
         }
 
@@ -152,19 +150,22 @@ precision mediump float;
         return texture;
     }
 
-    render (){
-			if(this.bypass > 0){
-				return false;
-			}
-			  let dirty = this.dirty;
+    render () {
+        if (!this._program) {
+            console.warn('[Gandi Render]: GandiGlitch shader program is ', this._program);
+        }
+        if (this.bypass > 0) {
+            return false;
+        }
+        let dirty = this.dirty;
         this._duration--;
-				if (this._duration < 0) {
-					this.dirty = false;
-					return dirty;
-				}
+        if (this._duration < 0) {
+            this.dirty = false;
+            return dirty;
+        }
         this._gl.useProgram(this._program.program);
         twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
-				
+
         const heightMap = this.generateHeightmap(64);
         const texture = twgl.createTexture(this._gl, {
             src: heightMap.image.data
@@ -191,11 +192,11 @@ precision mediump float;
                 byp: 1
             });
             dirty = false;
-						this.dirty = false;
+            this.dirty = false;
         }
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
-				this._gl.deleteTexture(texture);
-				this._gl.deleteTexture(textureDiff);
+        this._gl.deleteTexture(texture);
+        this._gl.deleteTexture(textureDiff);
         return dirty;
     }
 
