@@ -2,19 +2,18 @@
 const twgl = require('twgl.js');
 
 class GandiComics {
-    constructor (gl, bufferInfo, render){
+    constructor(gl, bufferInfo, render) {
         this._gl = gl;
         this._bufferInfo = bufferInfo;
         this._render = render;
         this._program = twgl.createProgramInfo(gl, [GandiComics.vertexShader, GandiComics.fragmentShader]);
         this.uniforms = GandiComics.uniforms;
-        this.uniforms.tSize = [480,360];
+        this.uniforms.tSize = [480, 360];
         this.dirty = false;
         this.bypass = 1;
-       
     }
 
-    static get uniforms (){
+    static get uniforms () {
         return {
             byp: 1,
             tDiffuse: 0,
@@ -25,7 +24,7 @@ class GandiComics {
         };
     }
 
-    static get vertexShader (){
+    static get vertexShader () {
         return /* glsl */`
 varying vec2 vUv;
 attribute vec2 a_position;
@@ -65,21 +64,24 @@ void main() {
 `;
     }
 
-    render (){
-        if(this.bypass > 0){
-          return false;
+    render () {
+        if (!this._program) {
+            console.warn('[Gandi Render]: GandiComics shader program is ', this._program);
+        }
+        if (this.bypass > 0) {
+            return false;
         }
         let dirty = this.dirty;
-        
+
         this._gl.useProgram(this._program.program);
         twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
         twgl.setUniforms(this._program, this.uniforms);
-        
+
 
         const texture = twgl.createTexture(this._gl, {
-          src: this._gl.canvas
+            src: this._gl.canvas
         });
-        
+
         twgl.setUniforms(this._program, {
             tDiffuse: texture || 0,
         });

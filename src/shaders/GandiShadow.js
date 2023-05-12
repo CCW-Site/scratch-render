@@ -15,7 +15,7 @@ class GandiShadow {
     static get uniforms (){
         return {
             byp: 1,
-            tOld: 0, 
+            tOld: 0,
             tNew: 0,
             damp: .9,
         };
@@ -39,7 +39,7 @@ void main() {
 #ifdef GL_ES
 precision mediump float;
 #endif
-uniform int byp; 
+uniform int byp;
 uniform float damp;
 uniform sampler2D tOld;
 uniform sampler2D tNew;
@@ -62,6 +62,9 @@ void main() {
     }
 
     render (){
+        if (!this._program) {
+            console.warn('[Gandi Render]: GandiShadow shader program is ', this._program);
+        }
         if(this.bypass > 0){
           return false;
         }
@@ -77,12 +80,12 @@ void main() {
             src: this._gl.canvas
           });
         }
-        
+
         this.tNew = twgl.createTexture(this._gl, {
           // target: this._gl.TEXTURE_2D,
           src: this._gl.canvas
         });
-        
+
         twgl.setUniforms(this._program, {
             tNew: this.tNew,
             tOld: this.tOld,
@@ -91,7 +94,7 @@ void main() {
             // defaultColor: [1.0, 0.0, 1.0],
         });
 
-        
+
 
         this.dirty = true;
         dirty = true;
