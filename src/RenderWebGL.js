@@ -25,6 +25,9 @@ const __blendColor = new Uint8ClampedArray(4);
 const GandiShaderManager = require('./GandiShaderManager');
 // const GandiMultiPass = require('./shaders/GandiMultiPass');
 
+const SpineSkin = require('./SpineSkin');
+const SpineManager = require('./SpineManager');
+
 // More pixels than this and we give up to the GPU and take the cost of readPixels
 // Width * Height * Number of drawables at location
 const __cpuTouchingColorPixelCount = 4e4;
@@ -236,11 +239,12 @@ class RenderWebGL extends EventEmitter {
 
         // init GandiShaderManager
         this._gandiShaderManager = new GandiShaderManager(gl, this._bufferInfo, this);
-
+        this.spineManager = new SpineManager(this, this._gl);
         this.on(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
 
         this.setBackgroundColor(1, 1, 1);
         this.setStageSize(xLeft || -240, xRight || 240, yBottom || -180, yTop || 180);
+
         this.resize(this._nativeSize[0], this._nativeSize[1]);
 
 
@@ -250,11 +254,23 @@ class RenderWebGL extends EventEmitter {
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     }
 
+    initSpineManager (assetHost) {
+        this.spineManager.assetManager.pathPrefix = assetHost;
+    }
+
     /**
      * @return {Skin} the Skin class, which is used for extensions.
      */
     getSkinClass () {
         return Skin;
+    }
+
+    /**
+     * @param {int} skinId the ID for the skin.
+     * @return {Skin} the skin instance
+     */
+    getSkin (skinId) {
+        return this._allSkins[skinId];
     }
 
     // tw: implement high quality pen option
@@ -455,6 +471,47 @@ class RenderWebGL extends EventEmitter {
         newSkin.setTextBubble(type, text, pointsLeft);
         this._allSkins[skinId] = newSkin;
         return skinId;
+    }
+
+    /**
+     * Create a new spine skin.
+     * the skin will be used.
+     * @returns {!int} the ID for the new skin.
+     */
+    createSpineSkin () {
+        if (!this.spineManager) {
+            console.warn('No spine manager to render');
+            return;
+        }
+        const skinId = this._nextSkinId++;
+        const newSkin = new SpineSkin(skinId, this.spineManager);
+        this._allSkins[skinId] = newSkin;
+        return [skinId, newSkin];
+    }
+
+    /**
+     * Create a new bitmap skin from a snapshot of the provided bitmap data.
+     * @param {!int} skinId the ID for the skin to change.
+     * @param {!string} atlasDataKey - atlas data to use.
+     * @param {!string} animationName - animation to play.
+     * @param {!bool} loop - is the animation looping.
+     * @param {!string} skeletonJSON - skeleton json data to use.
+     * @param {!int} [costumeResolution=1] - The resolution to use for this bitmap.
+     * @param {?Array<number>} [rotationCenter] Optional: rotation center of the skin. If not supplied, the center of
+     * the skin will be used.
+     */
+    updateSpineSkin (skinId, atlasDataKey, animationName, loop, skeletonJSON, costumeResolution, rotationCenter) {
+        if (!this.spineManager) {
+            console.warn('No spine manager to render');
+            return;
+        }
+        if (this._allSkins[skinId] instanceof SpineSkin) {
+            this._allSkins[skinId].setSkeleton(atlasDataKey, animationName, loop, skeletonJSON);
+            return;
+        }
+        const newSkin = new SpineSkin(skinId, this.spineManager);
+        newSkin.setSkeleton(atlasDataKey, animationName, loop, skeletonJSON);
+        this._reskin(skinId, newSkin);
     }
 
     /**
@@ -727,7 +784,7 @@ class RenderWebGL extends EventEmitter {
         this._doExitDrawRegion();
 
         const gl = this._gl;
-        
+
         twgl.bindFramebufferInfo(gl, null);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(...this._backgroundColor4f);
@@ -1737,13 +1794,23 @@ class RenderWebGL extends EventEmitter {
         gl.viewport(x, y, width, height);
         const projection = twgl.m4.ortho(bounds.left, bounds.right, bounds.top, bounds.bottom, -1, 1);
 
-        // Draw the stamped sprite onto the PenSkin's framebuffer.
-        this._drawThese([stampID], ShaderManager.DRAW_MODE.default, projection, {
-            ignoreVisibility: true,
-            framebufferWidth: this._nativeSize[0] * skin.renderQuality,
-            framebufferHeight: this._nativeSize[1] * skin.renderQuality
-        });
-        skin._silhouetteDirty = true;
+        if (stampDrawable.skin instanceof SpineSkin) {
+
+            // TODO: Support stamping Spine skins.
+            // for now, we can't get an exact texture for a particular spineSkin
+            // because all spineSkins use a same render;
+            // read spine render lastTexture;
+            // stampDrawable.skin.render.batcher.lastTexture;
+
+        } else {
+            // Draw the stamped sprite onto the PenSkin's framebuffer.
+            this._drawThese([stampID], ShaderManager.DRAW_MODE.default, projection, {
+                ignoreVisibility: true,
+                framebufferWidth: this._nativeSize[0] * skin.renderQuality,
+                framebufferHeight: this._nativeSize[1] * skin.renderQuality
+            });
+            skin._silhouetteDirty = true;
+        }
     }
 
     /* ******
@@ -1786,8 +1853,8 @@ class RenderWebGL extends EventEmitter {
                     1, 1,
                     1, 1,
                     0, 0,
-                    0, 1,
-                    
+                    0, 1
+
                 ]
             }
         };
@@ -1878,6 +1945,9 @@ class RenderWebGL extends EventEmitter {
 
         const gl = this._gl;
         let currentShader = null;
+        if (this.spineManager) {
+            this.spineManager.updateTime();
+        }
 
         const framebufferSpaceScaleDiffers = (
             'framebufferWidth' in opts && 'framebufferHeight' in opts &&
@@ -1909,12 +1979,20 @@ class RenderWebGL extends EventEmitter {
             // If the skin or texture isn't ready yet, skip it.
             if (!drawable.skin || !drawable.skin.getTexture(drawableScale)) continue;
 
+            // if the skin is spineSkin, use spine renderer
+            if (drawable.skin instanceof SpineSkin) {
+                this._doExitDrawRegion(); // exit any draw region
+                drawable.skin.render(drawable, drawableScale, projection, opts); // draw spine object
+                // reset blend mode because spine renderer changes it
+                gl.enable(gl.BLEND);
+                continue;
+            }
+
             const uniforms = {};
 
             let effectBits = drawable.enabledEffects;
             effectBits &= Object.prototype.hasOwnProperty.call(opts, 'effectMask') ? opts.effectMask : effectBits;
             const newShader = this._shaderManager.getShader(drawMode, effectBits);
-
             // Manually perform region check. Do not create functions inside a
             // loop.
             if (this._regionId !== newShader) {
@@ -1963,29 +2041,29 @@ class RenderWebGL extends EventEmitter {
         this._regionId = null;
     }
 
-    createImageFromTexture(gl, texture, width, height) {
+    createImageFromTexture (gl, texture, width, height) {
         // Create a framebuffer backed by the texture
-        var framebuffer = gl.createFramebuffer();
+        const framebuffer = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-    
+
         // Read the contents of the framebuffer
-        var data = new Uint8Array(width * height * 4);
+        const data = new Uint8Array(width * height * 4);
         gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data);
-    
+
         gl.deleteFramebuffer(framebuffer);
-    
-        // Create a 2D canvas to store the result 
-        var canvas = document.createElement('canvas');
+
+        // Create a 2D canvas to store the result
+        const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        var context = canvas.getContext('2d');
-    
+        const context = canvas.getContext('2d');
+
         // Copy the pixels to a 2D canvas
-        var imageData = context.createImageData(width, height);
+        const imageData = context.createImageData(width, height);
         imageData.data.set(data);
         context.putImageData(imageData, 0, 0);
-    
+
         return canvas.toDataURL();
     }
 
@@ -2170,6 +2248,31 @@ class RenderWebGL extends EventEmitter {
         this.dirty = true;
         this._snapshotCallbacks.push(callback);
     }
+
+    requestRenderSkeleton () {
+        if (!this.spineManager) {
+            console.warn('No spine manager to render');
+            return;
+        }
+        if (this._frameCall) {
+            return;
+        }
+        const frameCall = () => {
+            const dirty = this.spineManager.isDirty();
+            this.dirty = dirty;
+            if (dirty) {
+                this._frameCall = requestAnimationFrame(frameCall);
+            } else {
+                // when no skeleton is running animation, stop rendering
+                cancelAnimationFrame(this._frameCall);
+                this._frameCall = null;
+                // at least render once when no skeleton is running animation
+                // make sure the skeleton is rendered to stage, like change pose
+                this.dirty = true;
+            }
+        };
+        frameCall();
+    }
 }
 
 // :3
@@ -2195,8 +2298,5 @@ RenderWebGL.UseGpuModes = {
      */
     ForceCPU: 'ForceCPU'
 };
-
-// tw: special value to indicate the TurboWarp renderer
-RenderWebGL.isTurboWarp = true;
 
 module.exports = RenderWebGL;
