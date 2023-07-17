@@ -216,7 +216,7 @@ class SpineSkin extends Skin {
 
     getSkinList () {
         const output = [];
-        const skeletonData = this.skeleton?.data;
+        const skeletonData = this.skeleton.data;
         if (skeletonData) {
             for (let i = 0; i < skeletonData.skins.length; i++) {
                 output.push(skeletonData.skins[i].name);
