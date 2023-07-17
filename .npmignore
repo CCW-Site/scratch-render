@@ -8,7 +8,7 @@
 /.travis.yml
 /test
 /webpack.config.js
-
+/src/spine_runtime/spine-webgl.js.map
 # Build created files
 /playground
 
