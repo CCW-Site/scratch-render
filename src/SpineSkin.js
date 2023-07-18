@@ -200,12 +200,12 @@ class SpineSkin extends Skin {
     }
 
     getRootBone () {
-        return this.skeleton.getRootBone();
+        return this.skeleton && this.skeleton.getRootBone();
     }
 
     getBoneList () {
         const output = [];
-        const skeletonData = this.skeleton.data;
+        const skeletonData = this.skeleton && this.skeleton.data;
         if (skeletonData) {
             for (let i = 0; i < skeletonData.bones.length; i++) {
                 output.push(skeletonData.bones[i].name);
@@ -216,7 +216,7 @@ class SpineSkin extends Skin {
 
     getSkinList () {
         const output = [];
-        const skeletonData = this.skeleton.data;
+        const skeletonData = this.skeleton && this.skeleton.data;
         if (skeletonData) {
             for (let i = 0; i < skeletonData.skins.length; i++) {
                 output.push(skeletonData.skins[i].name);
@@ -272,7 +272,7 @@ class SpineSkin extends Skin {
 
     getAnimationList () {
         const output = [];
-        const skeletonData = this.skeleton.data;
+        const skeletonData = this.skeleton && this.skeleton.data;
         if (skeletonData) {
             for (let i = 0; i < skeletonData.animations.length; i++) {
                 output.push(skeletonData.animations[i].name);
@@ -288,7 +288,7 @@ class SpineSkin extends Skin {
     }
 
     getCurrentAnimation (trackIndex = 0) {
-        const current = this.animationState.getCurrent(trackIndex);
+        const current = this.animationState && this.animationState.getCurrent(trackIndex);
         if (current) {
             return current.animation;
         }
@@ -309,7 +309,7 @@ class SpineSkin extends Skin {
     }
 
     findAnimation (animationName) {
-        return this.skeleton.data.findAnimation(animationName);
+        return this.skeleton && this.skeleton.data.findAnimation(animationName);
     }
 
     setAnimation (
