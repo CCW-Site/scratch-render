@@ -27,12 +27,19 @@ class SpineSkin extends Skin {
         this.skeleton = null;
         this.animationState = null;
         this.preMultipliedAlpha = false;
-        this.originPosition = [0, 0];
-        this.originSize = [200, 200];
-        this._size = this.originSize;
-        this.originScale = [1, 1]; //  scale skeleton size to originSize
-        this.originRotation = 0;
-        // this.waitingForCompleteTrack = new Set();
+
+        // skeleton data in skeleton coordinate
+        this.skeletonPosition = [0, 0]; // skeleton center in skeleton coordinate
+        this.skeletonRotation = 0; // skeleton boot bone‘s rotation
+        this.skeletonScale = [1, 1]; // scale value of default size from skeleton's origin size
+        this.skeletonBaseSize = [200, 200]; // default size in stage that skeleton will scale to, use as a base size
+
+        // scratch data in stage coordinate
+        this.scratchScale = [100, 100];
+        this.scratchPosition = [0, 0];
+        this.scratchRotation = 0;
+
+        this._size = this.skeletonBaseSize;
         this.eventListeners = new Set();
         this.EVENT = SpineEvents;
     }
@@ -80,7 +87,7 @@ class SpineSkin extends Skin {
 
         const skeleton = skData.skeleton;
         this.skeleton = skeleton;
-        this.originPosition = null; // reset originPosition
+        this.skeletonPosition = null; // reset originPosition
 
         //  AnimationState
         const aniData = this.spine.createAnimationState(skeleton);
@@ -106,7 +113,7 @@ class SpineSkin extends Skin {
         }
 
         this.root = this.getRootBone();
-        this.originRotation = this.root.rotation;
+        this.skeletonRotation = this.root.rotation;
 
         // if (this.root) {
         //     //  +90 degrees to account for the difference in Spine vs. Phaser rotation
@@ -133,6 +140,89 @@ class SpineSkin extends Skin {
         }
     }
 
+    // sync scratch data to spine
+    updateScaleAndSize () {
+        const scaleX = this.scratchScale[0] / 100;
+        const scaleY = this.scratchScale[1] / 100;
+        this.skeleton.scaleX = this.skeletonScale[0] * scaleX;
+        this.skeleton.scaleY = this.skeletonScale[1] * scaleY;
+
+        const [w, h] = this.size;
+        const sw = this.skeletonBaseSize[0] * Math.abs(scaleX);
+        const sh = this.skeletonBaseSize[1] * Math.abs(scaleY);
+        const dy = -(sh - h) / 2;
+        this.skeletonPosition[1] += dy; // 更新中心点
+        if (dy !== 0) {
+            this.skeleton.y = this.skeletonPosition[1] + this.scratchPosition[1];
+        }
+
+        // const dx = -(sw - w) / 2;
+        // this.originPosition[0] += dx;
+
+        this.size = [sw, sh];
+    }
+
+    updatePosition () {
+        this.skeleton.x = this.skeletonPosition[0] + this.scratchPosition[0];
+        this.skeleton.y = this.skeletonPosition[1] + this.scratchPosition[1];
+    }
+
+    updateRotation () {
+        this.root.rotation = this.skeletonRotation + this.scratchRotation;
+    }
+
+    // set scratch data
+    setPosition ([x, y]) {
+        if (this.skeleton && (this.scratchPosition[0] !== x || this.scratchPosition[1] !== y)) {
+            this.scratchPosition = [x, y];
+            this.updatePosition();
+        }
+    }
+
+    setScale ([scaleX, scaleY]) {
+        if (this.skeleton && (this.scratchScale[0] !== scaleX || this.scratchScale[1] !== scaleY)) {
+            this.scratchScale = [scaleX, scaleY];
+            this.updateScaleAndSize();
+        }
+    }
+
+    setDirection (rotation) {
+        if (this.root && this.scratchRotation !== rotation) {
+            this.scratchRotation = rotation;
+            this.updateRotation();
+        }
+    }
+
+    resetSize () {
+        const {skeleton, spine} = this;
+        this.skeletonScale = [1, 1];
+        skeleton.scaleX = this.skeletonScale[0];
+        skeleton.scaleY = this.skeletonScale[1];
+        skeleton.updateWorldTransform();
+        const skeletonBounds = skeleton.getBoundsRect();
+
+        const [width, height] = this.skeletonBaseSize;
+
+        let skScale = 1;
+        const scaleX = width / skeletonBounds.width;
+        const scaleY = height / skeletonBounds.height;
+        skScale = Math.min(scaleX, scaleY);
+        const [stageWidth, stageHeight] = spine.getNativeSize();
+        // make center as origin point, and position to stage center
+        const center = [(stageWidth / 2), (stageHeight / 2)];
+        this.skeletonPosition = [
+            -((skeletonBounds.x + (skeletonBounds.width / 2)) * skScale) + center[0],
+            -((skeletonBounds.y + (skeletonBounds.height / 2)) * skScale) + center[1]];
+        this.skeletonScale = [skScale, skScale];
+
+        this._size = this.skeletonBaseSize;
+
+        // Synchronize sprite and new skeleton stage data
+        this.updateScaleAndSize();
+        this.updateRotation();
+        this.updatePosition();
+    }
+
     // refresh () {
     //     // if (this.root)
     //     // {
@@ -144,60 +234,6 @@ class SpineSkin extends Skin {
     //     this.skeleton.updateCache();
     // }
 
-    setPosition ([x, y]) {
-        if (this.skeleton) {
-            this.skeleton.x = this.originPosition[0] + x;
-            this.skeleton.y = this.originPosition[1] + y;
-        }
-    }
-
-    updateSizeWithScale (scaleX, scaleY) {
-        const [w, h] = this.size;
-        const sw = this.originSize[0] * scaleX;
-        const sh = this.originSize[1] * scaleY;
-        const dy = -(sh - h) / 2;
-        this.originPosition[1] += dy;
-
-        // const dx = -(sw - w) / 2;
-        // this.originPosition[0] += dx;
-
-        this.size = [sw, sh];
-    }
-
-    setScale ([scaleX, scaleY]) {
-        if (this.skeleton) {
-            this.updateSizeWithScale(scaleX, scaleY);
-            this.skeleton.scaleX = this.originScale[0] * scaleX;
-            this.skeleton.scaleY = this.originScale[1] * scaleY;
-        }
-    }
-
-    setDirection (rotation) {
-        this.root.rotation = this.originRotation + rotation;
-    }
-
-    resetSize () {
-        const {skeleton, spine} = this;
-        this.originScale = [1, 1];
-        skeleton.scaleX = this.originScale[0];
-        skeleton.scaleY = this.originScale[1];
-        skeleton.updateWorldTransform();
-        const skeletonBounds = skeleton.getBoundsRect();
-
-        const [width, height] = this.originSize;
-
-        let skScale = 1;
-        const scaleX = width / skeletonBounds.width;
-        const scaleY = height / skeletonBounds.height;
-        skScale = Math.min(scaleX, scaleY);
-        const [stageWidth, stageHeight] = spine.getNativeSize();
-        // make center as origin point, and position to stage center
-        const center = [(stageWidth / 2), (stageHeight / 2)];
-        this.originPosition = [
-            -((skeletonBounds.x + (skeletonBounds.width / 2)) * skScale) + center[0],
-            -((skeletonBounds.y + (skeletonBounds.height / 2)) * skScale) + center[1]];
-        this.originScale = [skScale, skScale];
-    }
 
     getRootBone () {
         return this.skeleton && this.skeleton.getRootBone();
@@ -240,9 +276,9 @@ class SpineSkin extends Skin {
             if (bone) {
                 switch (attrName) {
                 case 'worldY':
-                    return bone[attrName] - this.originPosition[1];
+                    return bone[attrName] - this.skeletonPosition[1];
                 case 'worldX':
-                    return bone[attrName] - this.originPosition[0];
+                    return bone[attrName] - this.skeletonPosition[0];
                 default:
                     return bone[attrName];
                 }
@@ -383,23 +419,27 @@ class SpineSkin extends Skin {
     }
 
     updateTransform (drawable) {
-        if (drawable._skinScaleDirty) {
-            // console.log('need scale to ', drawable._scale);
-            this.setScale([drawable._scale[0] / 100, drawable._scale[1] / 100]);
-        }
-        if (drawable._rotationTransformDirty) {
-            // update direction
-            // console.log('need update direction to ', drawable._direction);
-            this.setDirection(90 - drawable._direction);
-        }
-        if (drawable._transformDirty) {
-            // console.log('need _position to ', drawable._position);
-            this.setPosition(drawable._position);
-        }
-        if (drawable._rotationCenterDirty) {
-            // console.log('need update _rotationCenter to ');
-        }
+        // if (drawable._skinScaleDirty) {
 
+        //     console.log('need scale to ', drawable._scale);
+        //     this.setScale([drawable._scale[0] / 100, drawable._scale[1] / 100]);
+        // }
+        // if (drawable._rotationTransformDirty) {
+        //     // update direction
+        //     // console.log('need update direction to ', drawable._direction);
+        //     this.setDirection(90 - drawable._direction);
+        // }
+        // if (drawable._transformDirty) {
+        //     // console.log('need _position to ', drawable._position);
+        //     this.setPosition(drawable._position);
+        // }
+        // if (drawable._rotationCenterDirty) {
+        //     // console.log('need update _rotationCenter to ');
+        // }
+
+        this.setScale(drawable._scale);
+        this.setPosition(drawable._position);
+        this.setDirection(90 - drawable._direction);
         // let drawable calculate the matrix if needed
         // make sure the matrix is updated when use normal scratch render
         // and update dirty flag
