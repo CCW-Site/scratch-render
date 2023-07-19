@@ -42,6 +42,7 @@ class SpineSkin extends Skin {
         this._size = this.skeletonBaseSize;
         this.eventListeners = new Set();
         this.EVENT = SpineEvents;
+        this.animationSpeed = 1;
     }
 
     dispose () {
@@ -306,17 +307,6 @@ class SpineSkin extends Skin {
         return this.skeletonData.findEvent(eventDataName);
     }
 
-    getAnimationList () {
-        const output = [];
-        const skeletonData = this.skeleton && this.skeleton.data;
-        if (skeletonData) {
-            for (let i = 0; i < skeletonData.animations.length; i++) {
-                output.push(skeletonData.animations[i].name);
-            }
-        }
-        return output;
-    }
-
     setToSetupPose () {
         if (this.skeleton) {
             this.skeleton.setToSetupPose();
@@ -377,6 +367,28 @@ class SpineSkin extends Skin {
 
     setEmptyAnimation (trackIndex, mixDuration) {
         return this.animationState.setEmptyAnimation(trackIndex, mixDuration);
+    }
+
+    getAnimationList () {
+        const output = [];
+        const skeletonData = this.skeleton && this.skeleton.data;
+        if (skeletonData) {
+            for (let i = 0; i < skeletonData.animations.length; i++) {
+                output.push(skeletonData.animations[i].name);
+            }
+        }
+        return output;
+    }
+
+    getAnimationAttribute (name, attrName) {
+        if (name) {
+            const animation = this.findAnimation(name);
+            if (animation) {
+                if (attrName === 'speed') return this.animationSpeed;
+                return animation[attrName];
+            }
+        }
+        return '';
     }
 
     clearTracks () {
@@ -448,10 +460,13 @@ class SpineSkin extends Skin {
     }
 
     render (drawable, drawableScale, projection, opts){
-        const {skeleton, animationState: state} = this;
-        if (skeleton && state) {
+        const {skeleton, animationState} = this;
+        if (skeleton && animationState) {
             this.updateTransform(drawable);
-            this.spine.rendererSkeleton(skeleton, state);
+            animationState.update(this.spine.timeKeeper.delta * this.animationSpeed);
+            animationState.apply(skeleton);
+            skeleton.updateWorldTransform();
+            this.spine.rendererSkeleton(skeleton);
         }
     }
 

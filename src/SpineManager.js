@@ -160,11 +160,7 @@ class SpineManager {
         this.timeKeeper.update();
     }
 
-    rendererSkeleton (skeleton, animationState) {
-        // this.onResize();
-        animationState.update(this.timeKeeper.delta);
-        animationState.apply(skeleton);
-        skeleton.updateWorldTransform();
+    rendererSkeleton (skeleton) {
         this.renderer.begin();
         this.renderer.drawSkeleton(skeleton, true);
         if (this.drawDebug) {
