@@ -1984,6 +1984,7 @@ class RenderWebGL extends EventEmitter {
                 this._doExitDrawRegion(); // exit any draw region
                 drawable.skin.render(drawable, drawableScale, projection, opts); // draw spine object
                 // reset blend mode because spine renderer changes it
+                // NOTE -  change blend is a costly operation, so we only do it when necessary
                 gl.enable(gl.BLEND);
                 continue;
             }
@@ -2258,17 +2259,19 @@ class RenderWebGL extends EventEmitter {
             return;
         }
         const frameCall = () => {
+            // when frameCall is called, renderer must be dirty
+            // at least render once when no skeleton is running animation
+            // make sure the skeleton is rendered to stage, like change pose
+            this.dirty = true;
+
+            // spineManager.isDirty() means there is at least one skeleton are running animation
             const dirty = this.spineManager.isDirty();
-            this.dirty = dirty;
             if (dirty) {
                 this._frameCall = requestAnimationFrame(frameCall);
             } else {
                 // when no skeleton is running animation, stop rendering
                 cancelAnimationFrame(this._frameCall);
                 this._frameCall = null;
-                // at least render once when no skeleton is running animation
-                // make sure the skeleton is rendered to stage, like change pose
-                this.dirty = true;
             }
         };
         frameCall();
