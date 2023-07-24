@@ -57,6 +57,11 @@ class SpineManager {
         console.log('onResize viewport', viewportWidth, viewportHeight);
     }
 
+    isMultiSkeleton (skeletonJSONObj) {
+        const skeletonObjectKeys = ['skeleton', 'bones', 'skins', 'animations'];
+        return skeletonObjectKeys.find(key => !skeletonJSONObj[key]);
+    }
+
     getAtlasFileByJSONFile (jsonFile) {
         return this.atlasCache[jsonFile];
     }
@@ -64,7 +69,7 @@ class SpineManager {
     loadAtlasAndJson (atlasKey, jsonFile) {
         const loadTextureAtlas = new Promise((resolve, reject) => {
             const success = (path, asset) => {
-
+                // TODO - cache atlas
                 resolve();
             };
             const error = (path, message) => {
@@ -80,7 +85,7 @@ class SpineManager {
         const loadJson = new Promise((resolve, reject) => {
             const success = (path, asset) => {
                 this.atlasCache[jsonFile] = atlasKey;
-                resolve();
+                resolve(this.assetManager.require(jsonFile));
             };
             const error = (path, message) => {
                 console.error('loadSpineAsset error', path);
@@ -88,6 +93,7 @@ class SpineManager {
                 reject(message);
             };
             this.assetManager.loadJson(jsonFile, success, error);
+
         }).catch(e => {
             console.log(e);
         });
@@ -105,7 +111,10 @@ class SpineManager {
             console.warn(`Gandi: skeleton json file not loaded - ${jsonFile}`);
             return null;
         }
-        return Object.keys(skeletonJSONObj);
+        if (this.isMultiSkeleton(skeletonJSONObj)) {
+            return Object.keys(skeletonJSONObj);
+        }
+        return [jsonFile];
     }
 
     async createSkeleton (atlasKey, jsonFile, skeletonName) {
@@ -134,12 +143,23 @@ class SpineManager {
             console.warn(`Spine: No skeleton data for: ${atlasKey}`);
             return null;
         }
-        if (Object.hasOwnProperty.call(skeletonJSONObj, skeletonName) === false) {
-            console.warn(`Spine: No skeleton data for: ${skeletonName}`);
-            // return null;
+        const isMultiSkeleton = this.isMultiSkeleton(skeletonJSONObj);
+        let dataJSON = isMultiSkeleton ? skeletonJSONObj[skeletonName] : skeletonJSONObj;
+
+        if (!dataJSON) {
+            console.warn(`Spine: No skeleton data for: ${skeletonName}, try load first valid one in JSON`);
+            if (isMultiSkeleton) {
+                for (const key in skeletonJSONObj) {
+                    if (Object.hasOwnProperty.call(skeletonJSONObj, key)) {
+                        dataJSON = skeletonJSONObj[key];
+                        break;
+                    }
+                }
+            }
         }
 
-        const skeletonData = skeletonLoader.readSkeletonData(skeletonJSONObj[skeletonName]);
+
+        const skeletonData = skeletonLoader.readSkeletonData(dataJSON);
 
         const skeleton = new Spine.Skeleton(skeletonData);
 
