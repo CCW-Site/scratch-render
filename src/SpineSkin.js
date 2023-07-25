@@ -276,8 +276,10 @@ class SpineSkin extends Skin {
             const bone = this.findBone(boneName);
             if (bone) {
                 switch (attrName) {
-                case 'worldY':
-                    return bone[attrName] - this.skeletonPosition[1];
+                case 'worldY':{
+                    const rect = this.skeleton.getBoundsRect();
+                    return bone[attrName] - this.skeletonPosition[1] - (rect.height / 2);
+                }
                 case 'worldX':
                     return bone[attrName] - this.skeletonPosition[0];
                 default:
