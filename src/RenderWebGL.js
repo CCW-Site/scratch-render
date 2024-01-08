@@ -252,6 +252,21 @@ class RenderWebGL extends EventEmitter {
         /** @todo disable when no partial transparency? */
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+        /**
+         * Export internals for third-party extensions.
+         * Compatible with tw
+         */
+        this.exports = {
+            twgl,
+            Drawable,
+            Skin,
+            BitmapSkin,
+            TextBubbleSkin,
+            PenSkin,
+            SVGSkin,
+            Rectangle
+        };
     }
 
     initSpineManager (assetHost) {
