@@ -6,7 +6,10 @@ class GandiShader {
         this._gl = gl;
         this._bufferInfo = bufferInfo;
         this._render = render;
-        this._program = twgl.createProgramInfo(gl, [vert, frag]);
+        const onErr = (e) => {
+            throw new Error(e);
+        };
+        this._program = twgl.createProgramInfo(gl, [vert, frag], onErr);
         this.dirty = false;
         this.bypass = 1;
     }
@@ -30,6 +33,9 @@ precision mediump float;
     }
 
     __setupProgram () {
+        if (this._program == null || this._program.program == null) {
+            return;
+        }
         this._gl.useProgram(this._program.program);
         twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
         twgl.setUniforms(this._program, this.uniforms);
