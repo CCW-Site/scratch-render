@@ -22,7 +22,7 @@ class GandiShake extends GandiShader{
     this.dirty = true;
     this.count = 0;
     this.skip = skip;
-    this._render.dirty = true;
+    this._render.peDirty = true;
   }
 
   static get uniforms (){
@@ -39,7 +39,9 @@ class GandiShake extends GandiShader{
     
     void main() {
       vUv = uv;
-      gl_Position = vec4(-a_position * 2.0, 0.0, 1.0);
+      vec2 fixedPosition = a_position;
+      fixedPosition.y = -fixedPosition.y;
+      gl_Position = vec4(-fixedPosition * 2.0, 0.0, 1.0);
     }
   `;
   }
@@ -65,6 +67,7 @@ class GandiShake extends GandiShader{
         vec2 p = vUv;
         vec4 cr = texture(tDiffuse, p + offset/100.0);
         outColor = cr;
+        //outColor = vec4(1.0,1.0,0.0,1.0);
       } else{
         outColor = texture(tDiffuse, vUv);
       }
@@ -97,18 +100,18 @@ class GandiShake extends GandiShader{
     let dirty =  this.dirty;
     const gl = this._gl;
 
-    const textureDiff = twgl.createTexture(gl, {
-      src: gl.canvas
-    });
+    console.info('offset', this.offset);
+
     twgl.setUniforms(this._program, {
       byp: this.bypass,
-      tDiffuse: textureDiff,
+      tDiffuse: this._render.fbo.attachments[0],
       offset: [MathUtils.randFloat(-xRange, xRange),MathUtils.randFloat(-yRange, yRange)],
     });
 
     twgl.drawBufferInfo(gl, this._bufferInfo);
+    //twgl.drawBufferInfo(gl, this._render.fbo.bufferInfo);
 
-    this._gl.deleteTexture(textureDiff);
+    //this._gl.deleteTexture(textureDiff);
 
     dirty = true;
     this.dirty = dirty;

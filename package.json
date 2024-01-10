@@ -1,6 +1,6 @@
 {
   "name": "@xigua/scratch-render",
-  "version": "0.4.10",
+  "version": "0.4.11-beta",
   "description": "WebGL Renderer for Scratch 3.0",
   "author": "Massachusetts Institute of Technology",
   "license": "BSD-3-Clause",
@@ -8,7 +8,7 @@
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/LLK/scratch-render.git",
-    "sha": "b5514a25e481c94424c87347b2797ab1313ff511"
+    "sha": "f335c0b749d7e42172a79f6860f8a4612fdb31b2"
   },
   "main": "./dist/node/scratch-render.js",
   "browser": "./src/index.js",
@@ -26,11 +26,11 @@
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",
-    "@babel/polyfill": "^7.0.0",
-    "@babel/preset-env": "^7.0.0",
     "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
     "@babel/plugin-syntax-dynamic-import": "^7.0.0",
     "@babel/plugin-transform-async-to-generator": "^7.1.0",
+    "@babel/polyfill": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
     "babel-eslint": "10.1.0",
     "babel-loader": "^8.0.0",
     "copy-webpack-plugin": "4.6.0",

@@ -15,8 +15,8 @@ class GandiShadow {
     static get uniforms (){
         return {
             byp: 1,
-            tOld: 0,
-            tNew: 0,
+            // tOld: 0,
+            // tNew: 0,
             damp: .9,
         };
     }
@@ -29,7 +29,9 @@ attribute vec2 uv;
 attribute vec2 a_texCoord;
 void main() {
   vUv = uv;
-  gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
+  vec2 fixedPosition = a_position;
+  fixedPosition.y = -fixedPosition.y;
+  gl_Position = vec4(-fixedPosition * 2.0, 0.0, 1.0);
 }
 `;
     }
@@ -49,7 +51,9 @@ vec4 when_gt( vec4 x, float y ) {
 }
 void main() {
   if(byp < 1) {
-    vec4 texelOld = texture2D( tOld, vUv );
+    vec2 uvOld = vUv;
+    uvOld.y = - uvOld.y;
+    vec4 texelOld = texture2D( tOld, uvOld );
     vec4 texelNew = texture2D( tNew, vUv );
     texelOld *= damp * when_gt( texelOld, 0.1 );
     gl_FragColor = max(texelNew, texelOld);
@@ -81,13 +85,13 @@ void main() {
           });
         }
 
-        this.tNew = twgl.createTexture(this._gl, {
-          // target: this._gl.TEXTURE_2D,
-          src: this._gl.canvas
-        });
+        // this.tNew = twgl.createTexture(this._gl, {
+        //   // target: this._gl.TEXTURE_2D,
+        //   src: this._gl.canvas
+        // });
 
         twgl.setUniforms(this._program, {
-            tNew: this.tNew,
+            tNew: this._render.fbo.attachments[0],
             tOld: this.tOld,
             damp: this.damp,
             byp: this.bypass,
@@ -102,7 +106,7 @@ void main() {
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
 
         this._gl.deleteTexture(this.tOld);
-        this._gl.deleteTexture(this.tNew);
+        // this._gl.deleteTexture(this.tNew);
 
         this.tOld = twgl.createTexture(this._gl, {
           src: this._gl.canvas

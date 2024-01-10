@@ -38,7 +38,7 @@ class GandiGlitch {
     set duration (d = 10) {
         this._duration = d;
         this.dirty = true;
-        this._render.dirty = true;
+        this._render.peDirty = true;
     }
 
     get duration () {
@@ -47,8 +47,8 @@ class GandiGlitch {
 
     static get uniforms () {
         return {
-            tDiffuse: 0, // diffuse texture
-            tDisp: 0, // displacement texture for digital glitch squares
+            // tDiffuse: 0, // diffuse texture
+            // tDisp: 0, // displacement texture for digital glitch squares
             byp: 0, // apply the glitch ?
             amount: 0.08,
             angle: 0.02,
@@ -67,11 +67,12 @@ class GandiGlitch {
 		attribute vec2 a_position;
 		attribute vec2 uv;
 		attribute vec2 a_texCoord;
-		void main() {
-			vUv = uv; //vec2(0,0);
-
-			gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
-		}`;
+        void main() {
+            vUv = uv;
+            vec2 fixedPosition = a_position;
+            fixedPosition.y = -fixedPosition.y;
+            gl_Position = vec4(-fixedPosition * 2.0, 0.0, 1.0);
+          }`;
     }
 
     static get fragmentShader () {
@@ -170,14 +171,14 @@ precision mediump float;
         const texture = twgl.createTexture(this._gl, {
             src: heightMap.image.data
         });
-        const textureDiff = twgl.createTexture(this._gl, {
-            src: this._gl.canvas
-        });
+        // const textureDiff = twgl.createTexture(this._gl, {
+        //     src: this._gl.canvas
+        // });
         twgl.setUniforms(this._program, this._uniforms);
         twgl.setUniforms(this._program, {
             byp: this.bypass,
             tDisp: texture || 0,
-            tDiffuse: textureDiff || 0,
+            tDiffuse: this._render.fbo.attachments[0],
             amount: Math.random() / this.options.amount,
             seed_x: MathUtils.randFloat(-1, 1),
             seed_y: MathUtils.randFloat(-1, 1),
@@ -196,7 +197,7 @@ precision mediump float;
         }
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
         this._gl.deleteTexture(texture);
-        this._gl.deleteTexture(textureDiff);
+        //this._gl.deleteTexture(textureDiff);
         return dirty;
     }
 

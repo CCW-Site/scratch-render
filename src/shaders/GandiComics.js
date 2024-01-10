@@ -78,19 +78,19 @@ void main() {
         twgl.setUniforms(this._program, this.uniforms);
 
 
-        const texture = twgl.createTexture(this._gl, {
-            src: this._gl.canvas
-        });
+        // const texture = twgl.createTexture(this._gl, {
+        //     src: this._gl.canvas
+        // });
 
         twgl.setUniforms(this._program, {
-            tDiffuse: texture || 0,
+            tDiffuse: this._render.fbo.attachments[0],
         });
 
         this.dirty = true;
         dirty = true;
 
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
-        this._gl.deleteTexture(texture);
+        // this._gl.deleteTexture(texture);
         return dirty;
     }
 }

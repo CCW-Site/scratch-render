@@ -21,7 +21,7 @@ class GandiFilm {
     static get uniforms () {
         return {
             byp: 1,
-            tDiffuse: 0,
+            // tDiffuse: 0,
             time: 0.0,
             nIntensity: 0.15,
             sIntensity: 0.05,
@@ -38,7 +38,9 @@ attribute vec2 uv;
 attribute vec2 a_texCoord;
 void main() {
   vUv = uv;
-  gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
+  vec2 fixedPosition = a_position;
+  fixedPosition.y = -fixedPosition.y;
+  gl_Position =  vec4(-fixedPosition *2.0 ,0.0, 1.0 );
 }
 `;
     }
@@ -105,15 +107,15 @@ void main() {
         twgl.setUniforms(this._program, this.uniforms);
 
 
-        const texture = twgl.createTexture(this._gl, {
-            src: this._gl.canvas
-        });
+        // const texture = twgl.createTexture(this._gl, {
+        //     src: this._gl.canvas
+        // });
 
         twgl.setUniforms(this._program, {
             time: this.time,
             byp: this.bypass,
             // grayscale: this.grayscale || false,
-            tDiffuse: texture || 0,
+            tDiffuse: this._render.fbo.attachments[0],
 
         });
 
@@ -121,7 +123,7 @@ void main() {
         dirty = true;
 
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
-        this._gl.deleteTexture(texture);
+        // this._gl.deleteTexture(texture);
         return dirty;
     }
 }

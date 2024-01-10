@@ -12,7 +12,9 @@ attribute vec2 uv;
 attribute vec2 a_texCoord;
 void main() {
 vUv = uv; 
-gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
+vec2 fixedPosition = a_position;
+fixedPosition.y = -fixedPosition.y;
+gl_Position =  vec4(-fixedPosition *2.0 ,0.0, 1.0 );
 }
 `;
   }
@@ -62,11 +64,11 @@ gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
 
     let textureDiff = undefined;
     if (this.config.passTexture) {
-      textureDiff = twgl.createTexture(gl, {
-        src: gl.canvas
-      });
+      // textureDiff = twgl.createTexture(gl, {
+      //   src: gl.canvas
+      // });
       twgl.setUniforms(this._program, {
-        tDiffuse:textureDiff,
+        tDiffuse:this._render.fbo.attachments[0],
       });
     }
 
@@ -81,9 +83,9 @@ gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
     twgl.drawBufferInfo(gl, this._bufferInfo);
 
     // console.info('render');
-    if (textureDiff) {
-      this._gl.deleteTexture(textureDiff);
-    }
+    // if (textureDiff) {
+    //   this._gl.deleteTexture(textureDiff);
+    // }
     this.dirty = true;
     let dirty =  this.dirty;
     return dirty;

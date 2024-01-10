@@ -14,9 +14,10 @@ class GandiShockWave extends GandiShader {
         return {
           center: [0.5, 0.5],
           waveSize: 0.1,
-          tDiffuse: 0,
+          // tDiffuse: 0,
           radius: 0.2,
           amplitude: 0.1,
+          aspect: 1.0,
           decay:0.01,
           time:3,
         };
@@ -30,7 +31,9 @@ attribute vec2 uv;
 attribute vec2 a_texCoord;
 void main() {
   vUv = uv; 
-  gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
+  vec2 fixedPosition = a_position;
+  fixedPosition.y = -fixedPosition.y;
+  gl_Position =  vec4(-fixedPosition *2.0 ,0.0, 1.0 );
 }
 `;
     }
@@ -46,6 +49,7 @@ uniform float waveSize;
 uniform float radius;
 uniform float amplitude;
 uniform float time;
+uniform float aspect;
 
 uniform sampler2D tDiffuse;
 varying vec2 vUv;
@@ -55,11 +59,13 @@ varying vec2 vUv;
 
 vec2 getPixelShift(vec2 center,vec2 pixelpos,float startradius,float size,float shockfactor, in vec2 fragCoord)
 {
+  // pixelpos.x *= aspect;
+  // center.x *= aspect;
 	float m_distance = distance(center,pixelpos);
 	if( m_distance > startradius && m_distance < startradius+size )
 	{
 		float sin_dist = sin((m_distance -startradius)/size* _PI )*shockfactor;
-		return ( pixelpos - normalize(pixelpos-center)*sin_dist )/ vec2(1,1);
+		return ( pixelpos - normalize(pixelpos-center)*sin_dist )/ vec2(1.0,1.0);
 	}
 	else 
 		return fragCoord.xy / vec2(1,1);
@@ -78,6 +84,7 @@ void main() {
     }
 
     drop(x, y, amplitude = 0.1, waveSize = 0.1, decay = 0.01, step = 0.05){
+      // debugger;
       this.time = 0;
       this.step = step;
       this.uniforms.center = [x, y];
@@ -85,8 +92,9 @@ void main() {
       this.uniforms.waveSize = waveSize;
       this.uniforms.decay = decay;
       this.uniforms.bypass = false;
+      this.uniforms.aspect = this._render._nativeSize[0]/this._render._nativeSize[1];
       this.dirty = true;
-      this._render.dirty = true;
+      this._render.peDirty = true;
     }
 
     render (){
@@ -106,17 +114,17 @@ void main() {
 
       const gl = this._gl;
       super.render();
-      const textureDiff = twgl.createTexture(gl, {
-        src: gl.canvas
-      });
+      // const textureDiff = twgl.createTexture(gl, {
+      //   src: gl.canvas
+      // });
       twgl.setUniforms(this._program, {
-        tDiffuse:textureDiff,
+        tDiffuse:this._render.fbo.attachments[0],
         time:this.time,
       });
   
       twgl.drawBufferInfo(gl, this._bufferInfo);
 
-      this._gl.deleteTexture(textureDiff);
+      // this._gl.deleteTexture(textureDiff);
 
       // console.info('render');
       this.dirty = true;

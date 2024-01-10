@@ -190,6 +190,9 @@ canvas.addEventListener('click', event => {
     if (pickID >= 0) {
         console.dir(renderer.extractDrawableScreenSpace(pickID, mousePos.x, mousePos.y));
     }
+    // renderer._gandiShaderManager.effectors.get('shake').shake(10, 10);
+    // renderer._gandiShaderManager.effectors.get('shake').render();
+    renderer._gandiShaderManager.effectors.get('shockwave').drop(0.5, 0.5, 0.1, 0.1, 0.001, 0.01);
 });
 
 const drawStep = function () {
@@ -199,6 +202,11 @@ const drawStep = function () {
     requestAnimationFrame(drawStep);
 };
 drawStep();
+// renderer._gandiShaderManager.register('shake');
+// renderer._gandiShaderManager.effectors.get('shake').bypass = 0;
+
+renderer._gandiShaderManager.register('bloom');
+renderer._gandiShaderManager.effectors.get('bloom').bypass = 0;
 
 const debugCanvas = /** @type {canvas} */ document.getElementById('debug-canvas');
 renderer.setDebugCanvas(debugCanvas);

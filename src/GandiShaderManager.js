@@ -6,6 +6,7 @@ const GandiShake = require('./shaders/GandiShake');
 const GandiShockWave = require('./shaders/GandiShockWave');
 const GandiBloom = require('./shaders/GandiBloom');
 const GandiShaderLoader = require('./shaders/GandiShaderLoader');
+const GandiSync = require('./shaders/GandiSync');
 
 
 // const twgl = require('twgl.js');
@@ -22,6 +23,8 @@ class GandiShaderManager {
         this._render = render;
         this.effectors = new Map();
         this.postProcessing = [];
+
+        this.syncShader = new GandiSync(this._gl, this._bufferInfo, this._render, {});
 
         // Test shake effector
         // this.register('shake', false);
@@ -92,6 +95,10 @@ class GandiShaderManager {
             dirty |= effector.render();
         });
         return dirty;
+    }
+
+    sync(){
+        this.syncShader.render();
     }
   
 }
