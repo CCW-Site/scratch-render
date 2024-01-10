@@ -5,7 +5,7 @@ const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const base = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     devServer: {
-        contentBase: false,
+        contentBase: path.resolve('playground'),
         host: '0.0.0.0',
         port: process.env.PORT || 8361
     },
