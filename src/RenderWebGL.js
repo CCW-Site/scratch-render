@@ -235,6 +235,9 @@ class RenderWebGL extends EventEmitter {
 
         this.dirty = true;
 
+        // post effects should be redrawn or not
+        this.peDirty = true;
+
         this._createGeometry();
 
         // init GandiShaderManager
@@ -267,6 +270,21 @@ class RenderWebGL extends EventEmitter {
             SVGSkin,
             Rectangle
         };
+    }
+
+    _createFBO (gl, width, height) {
+        if (this.fbo) {
+            gl.deleteFramebuffer(this.fbo.framebuffer);
+            this.fbo = null;
+        }
+        this.fbo = twgl.createFramebufferInfo(gl, [{
+            width: width,
+            height: height,
+            min: gl.LINEAR,
+            mag: gl.LINEAR,
+            wrap: gl.CLAMP_TO_EDGE
+        }]);
+        // console.info('create fbo, width: ' + width + ', height: ' + height);
     }
 
     initSpineManager (assetHost) {
@@ -345,6 +363,7 @@ class RenderWebGL extends EventEmitter {
         if (canvas.width !== newWidth || canvas.height !== newHeight) {
             canvas.width = newWidth;
             canvas.height = newHeight;
+            this._createFBO(this._gl, newWidth, newHeight);
             // Resizing the canvas causes it to be cleared, so redraw it.
             this.draw();
 
@@ -790,28 +809,42 @@ class RenderWebGL extends EventEmitter {
      * Draw all current drawables and present the frame on the canvas.
      */
     draw () {
-        if (!this.dirty) {
+        if (!this.dirty && !this.peDirty) {
             return;
         }
-        this.dirty = false;
-        // console.info('draw');
-
-        this._doExitDrawRegion();
-
         const gl = this._gl;
 
+        if (this.dirty) {
+            // should redraw all elements
+            this.dirty = false;
+            this.peDirty = true; // if dirty, peDirty should be true (force to redraw post effects)
+            this._doExitDrawRegion();
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo.framebuffer);
+            // twgl.bindFramebufferInfo(gl, null);
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            gl.clearColor(...this._backgroundColor4f);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection, {
+                framebufferWidth: gl.canvas.width,
+                framebufferHeight: gl.canvas.height
+            });
+        }
+
+        // switch to default framebuffer
         twgl.bindFramebufferInfo(gl, null);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(...this._backgroundColor4f);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection, {
-            framebufferWidth: gl.canvas.width,
-            framebufferHeight: gl.canvas.height
-        });
+        // draw the synced effects
+        this._gandiShaderManager.sync();
 
-        // TODO: 是否要在这里后处理全局特效？
-        this.dirty |= this._gandiShaderManager.execPostProcessingRender();
+        if (this.peDirty) {
+            // execute post effects
+            this.peDirty = this._gandiShaderManager.execPostProcessingRender();
+        }
 
         /**
          * 旧版：CanvasRenderReady 之前是在scratch-gui 中触发，接收的是gl.canvas 但是会导致录屏闪屏
@@ -1818,7 +1851,7 @@ class RenderWebGL extends EventEmitter {
             // stampDrawable.skin.render.batcher.lastTexture;
 
         } else {
-            // Draw the stamped sprite onto the PenSkin's framebuffer.
+        // Draw the stamped sprite onto the PenSkin's framebuffer.
             this._drawThese([stampID], ShaderManager.DRAW_MODE.default, projection, {
                 ignoreVisibility: true,
                 framebufferWidth: this._nativeSize[0] * skin.renderQuality,
@@ -1904,6 +1937,7 @@ class RenderWebGL extends EventEmitter {
         } else {
             this._queryBufferInfo = twgl.createFramebufferInfo(gl, attachments, width, height);
         }
+        this._createFBO(gl, width, height);
     }
 
     /**

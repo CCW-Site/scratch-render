@@ -11,7 +11,7 @@ class GandiBloom extends GandiShader {
 
     static get uniforms (){
         return {
-          tDiffuse: 0,
+          // tDiffuse: 0,
           threshold: .2,
           intensity: 1.0,
           blurSize: 10.0,
@@ -26,7 +26,9 @@ attribute vec2 uv;
 attribute vec2 a_texCoord;
 void main() {
   vUv = uv;
-  gl_Position =  vec4(-a_position *2.0 ,0.0, 1.0 );
+  vec2 fixedPosition = a_position;
+  fixedPosition.y = -fixedPosition.y;
+  gl_Position =  vec4(-fixedPosition *2.0 ,0.0, 1.0 );
 }
 `;
     }
@@ -104,19 +106,19 @@ void main( )
       let dirty = this.dirty;
       const gl = this._gl;
 
-      const textureDiff = twgl.createTexture(gl, {
-        src: gl.canvas
-      });
+      // const textureDiff = twgl.createTexture(gl, {
+      //   src: gl.canvas
+      // });
       twgl.setUniforms(this._program, {
         byp: this.bypass,
-        tDiffuse: textureDiff,
+        tDiffuse: this._render.fbo.attachments[0],
       });
 
       this.dirty = true;
       dirty = true;
 
       twgl.drawBufferInfo(this._gl, this._bufferInfo);
-      this._gl.deleteTexture(texture);
+      // this._gl.deleteTexture(texture);
       return dirty;
     }
 }
