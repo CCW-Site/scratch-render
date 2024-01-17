@@ -809,6 +809,19 @@ class RenderWebGL extends EventEmitter {
      * Draw all current drawables and present the frame on the canvas.
      */
     draw () {
+        // 受shader影响的drawList
+        let affectedDrawList;
+        // 不受shader影响的drawList
+        let unaffectedDrawList;
+        if (this.layerManager) {
+            // 如果有图层管理器
+            [this._drawList, affectedDrawList, unaffectedDrawList] = this.layerManager.beforeDraw();
+        } else {
+            // 没有图层管理，使用原版渲染
+            affectedDrawList = this._drawList;
+            unaffectedDrawList = [];
+        }
+
         if (!this.dirty && !this.peDirty) {
             return;
         }
@@ -816,7 +829,6 @@ class RenderWebGL extends EventEmitter {
 
         if (this.dirty) {
             // should redraw all elements
-            this.dirty = false;
             this.peDirty = true; // if dirty, peDirty should be true (force to redraw post effects)
             this._doExitDrawRegion();
 
@@ -826,7 +838,7 @@ class RenderWebGL extends EventEmitter {
             gl.clearColor(...this._backgroundColor4f);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
-            this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection, {
+            this._drawThese(affectedDrawList, ShaderManager.DRAW_MODE.default, this._projection, {
                 framebufferWidth: gl.canvas.width,
                 framebufferHeight: gl.canvas.height
             });
@@ -840,10 +852,21 @@ class RenderWebGL extends EventEmitter {
 
         // draw the synced effects
         this._gandiShaderManager.sync();
-
+                
+        const peDirty = this.peDirty;
         if (this.peDirty) {
             // execute post effects
             this.peDirty = this._gandiShaderManager.execPostProcessingRender();
+        }
+
+        // 继续绘制不受 shader 影响的部分
+        if (this.dirty || peDirty) {
+            this.dirty = false;
+        
+            this._drawThese(unaffectedDrawList, ShaderManager.DRAW_MODE.default, this._projection, {
+                framebufferWidth: gl.canvas.width,
+                framebufferHeight: gl.canvas.height
+            });
         }
 
         /**
