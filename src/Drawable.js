@@ -131,6 +131,14 @@ class Drawable {
 
         // tw: implement high quality render
         this._highQuality = false;
+
+        // gandi: use for layer management
+        this._layerIndex = 0;
+        /**
+         * 所属图层文件夹
+         * @type {LayerFolder}
+         */
+        this._layerFolder = null;
     }
 
     setHighQuality (highQuality) {
@@ -143,6 +151,10 @@ class Drawable {
     dispose () {
         // Use the setter: disconnect events
         this.skin = null;
+        // 从所属folder移除
+        if (this._layerFolder) {
+            this._layerFolder.remove(this._id);
+        }
     }
 
     /**
