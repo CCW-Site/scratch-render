@@ -120,7 +120,7 @@ class LayerFolder {
                 LayerFolder.orderDirtyFolders.add(this);
             }
             this._orderDirty = true;
-            this.itemsChanged = true;
+            LayerFolder.visualDirty = true;
         } else {
             this._orderDirty = false;
             if (removeFromDirtyList) {

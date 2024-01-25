@@ -125,10 +125,9 @@ class LayerManager {
             LayerFolder.sortAllDirtyFolders(this._order, true);
             // 反转 sep 的切割位置
             this.shaderSeparators.forEach(sep => {
-                if (sep[0] === 0) {
-                    // 反转
-                    sep[1] *= -1;
-                }
+                // 反转
+                if (sep[0] === 0) sep[1] *= -1;
+                else if (sep[0] === 2) sep[1][0] *= -1;
             });
         }
     }
