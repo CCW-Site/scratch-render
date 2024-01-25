@@ -675,9 +675,9 @@ class RenderWebGL extends EventEmitter {
         const drawListOffset = this._endIndexForKnownLayerGroup(currentLayerGroup);
         this._drawList.splice(drawListOffset, 0, drawableID);
 
-        // 如果是sprite，记录到layerManger的rootFolder
+        // 如果是sprite，记录到layerManger的defaultFolder
         if (group === 'sprite') {
-            this.layerManager.rootFolder.add(drawableID);
+            this.layerManager.defaultFolderDrawableAddTo.add(drawableID);
         }
 
         this._updateOffsets('add', currentGroupOrderingIndex);
@@ -775,7 +775,7 @@ class RenderWebGL extends EventEmitter {
         }
 
         this.dirty = true;
-        // 如果开启了图层排序且是sprite层，则改变folder内顺序
+        // 如果开启了图层管理器且是sprite层，则改变folder内顺序
         if (this.layerManager.layerSortingEnabled && group === 'sprite') {
             const folder = this.getDrawableLayerFolder(drawableID);
             // 只在文件夹内部移动
@@ -784,7 +784,7 @@ class RenderWebGL extends EventEmitter {
                 folder.changeDrawableOrder(drawableID, ascending, order, optIsRelative);
             }
         } else {
-        // 未开启图层排序，使用原版的做法
+        // 未开启图层管理器，使用原版的做法
             const currentLayerGroup = this._layerGroups[group];
             const startIndex = currentLayerGroup.drawListOffset;
             const endIndex = this._endIndexForKnownLayerGroup(currentLayerGroup);
@@ -854,20 +854,29 @@ class RenderWebGL extends EventEmitter {
      * Draw all current drawables and present the frame on the canvas.
      */
     draw () {
-        // 如果开启了图层管理，从layerManager读取排好序的drawLists
+        // 如果开启了图层管理器，从layerManager读取排好序的drawLists
         if (this.layerManager.layerSortingEnabled) {
 
             // 获取spriteLayerGroup的开始、结束索引
             const spriteLayerGroup = this._layerGroups.sprite;
-            const startIndex = spriteLayerGroup.drawListOffset;
-            const endIndex = this._endIndexForKnownLayerGroup(spriteLayerGroup);
+            if (spriteLayerGroup) {
+                const startIndex = spriteLayerGroup.drawListOffset;
+                const endIndex = this._endIndexForKnownLayerGroup(spriteLayerGroup);
 
-            // 对 _drawList 进行排序并更新
-            this._drawList = this.layerManager.getSortedDrawList(this._drawList, startIndex, endIndex);
+                // 对 _drawList 进行排序（仅当需要重新排序时）
+                // 同时会更新用于 shader 分层渲染的 separators 的信息
+                this._drawList = this.layerManager.getSortedDrawListAndUpdateSeparators(
+                    this._drawList,
+                    startIndex,
+                    endIndex
+                );
+            }
         } else {
+            // 未开启图层管理，仅读取 shader 的分层渲染的 separators 的信息
+            // 默认未设置分割位置的情况下，这个函数应该不会有性能消耗
             this.layerManager.refreshShaderSeparators(this._drawList);
         }
-        // 开始不受雷神 shader 影响的列表idx
+        // 读取不受雷神 shader 影响的列表临界idx
         const unshadedIdx = this.layerManager.shaderSeparators[0][2];
 
         if (!this.dirty && !this.peDirty) {

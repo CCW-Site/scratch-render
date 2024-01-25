@@ -20,7 +20,7 @@ class LayerFolder {
         // this._layerManager = layerManager;
         this._renderer = renderer;
         /**
-         * 文件夹名称（也作为文件夹id，同一个父文件夹内，两文件夹不能重名）
+         * 文件夹名称
          * @type {string}
          */
         this.name = name;
@@ -57,13 +57,19 @@ class LayerFolder {
          */
         this.parent = null;
 
+        LayerFolder.allFolders.add(this);
     }
 
     /**
-     * 记录需要排序的文件夹
-     * @type {Array<LayerFolder>}
+     * 记录所有已有的文件夹集合
+     * @type {Set<LayerFolder>}
      */
-    static orderDirtyFolders = [];
+    static allFolders = new Set();
+    /**
+     * 记录需要排序的文件夹集合
+     * @type {Set<LayerFolder>}
+     */
+    static orderDirtyFolders = new Set();
     /**
      * 是否有文件夹发生了会导致render变化的改变（如发生排序/增删）
      * @type {boolean}
@@ -73,13 +79,21 @@ class LayerFolder {
     /**
      * 将所有标记为dirty的文件夹进行排序
      * @param {1|-1} sortOrder 排序顺序：1升序/-1降序
+     * @param {boolean} forceSortAll 是否强制重新排序所有文件夹（例如更新了排序规则时）
      */
-    static sortAllDirtyFolders (sortOrder = 1) {
-        // 记录是否有被打乱的文件夹
-        LayerFolder.orderDirtyFolders.forEach(folder => {
-            folder.sortIfOrderDirty(sortOrder, false);
-        });
-        LayerFolder.orderDirtyFolders = [];
+    static sortAllDirtyFolders (sortOrder = 1, forceSortAll = false) {
+        if (forceSortAll) {
+            // 强制排序所有文件夹
+            LayerFolder.allFolders.forEach(folder => {
+                folder.sortIfOrderDirty(sortOrder, false, true);
+            });
+        } else {
+            // 排序所有标记被打乱的文件夹
+            LayerFolder.orderDirtyFolders.forEach(folder => {
+                folder.sortIfOrderDirty(sortOrder, false);
+            });
+        }
+        LayerFolder.orderDirtyFolders = new Set();
     }
 
     get items () {
@@ -95,20 +109,7 @@ class LayerFolder {
     }
 
     /**
-     * 从列表删除
-     * @param {Array} list 列表
-     * @param {any} item 项目
-     * @private
-     */
-    __removeFromList (list, item) {
-        const index = list.indexOf(item);
-        if (index !== -1) {
-            list.splice(index, 1);
-        }
-    }
-
-    /**
-     * 标记是否dirty（是否需要重新排序）
+     * 标记是否orderDirty（是否需要重新排序）
      * @param {boolean} dirty 是否dirty
      * @param {boolean} removeFromDirtyList 清除dirty标记时，是否移出dirtyList
      */
@@ -116,26 +117,34 @@ class LayerFolder {
         if (dirty) {
             // 记录等待排序的folder
             if (!this._orderDirty) {
-                LayerFolder.orderDirtyFolders.push(this);
+                LayerFolder.orderDirtyFolders.add(this);
             }
             this._orderDirty = true;
             this.itemsChanged = true;
         } else {
             this._orderDirty = false;
             if (removeFromDirtyList) {
-                this.__removeFromList(LayerFolder.orderDirtyFolders, this);
+                LayerFolder.orderDirtyFolders.delete(this);
             }
         }
     }
 
+    /**
+     * 文件夹的图层排序值
+     * @returns {number} 图层排序值
+     */
     get layerIndex () {
         return this._layerIndex;
     }
 
+    /**
+     * 更新文件夹的图层排序值（同时标记父文件夹orderDirty）
+     * @param {number} idx 排序值
+     */
     set layerIndex (idx) {
         if (this._layerIndex !== idx) {
             this._layerIndex = idx;
-            // 父文件夹标记为dirty
+            // 父文件夹标记为orderDirty
             this.parent.setOrderDirty(true);
         }
     }
@@ -166,6 +175,7 @@ class LayerFolder {
         // 更新父文件夹
         if (item instanceof LayerFolder) {
             item.parent = this;
+            LayerFolder.allFolders.add(item);
             // 记录 文件夹名 → 文件夹
             if (this._subFoldersHaveUniqueName) this.nameToSubFolder[item.name] = item;
         } else {
@@ -188,6 +198,7 @@ class LayerFolder {
             // 更新item父文件夹
             if (item instanceof LayerFolder) {
                 item.parent = null;
+                LayerFolder.allFolders.delete(item);
                 if (this._subFoldersHaveUniqueName) delete this.nameToSubFolder[item.name];
             } else {
                 this._renderer.setDrawableLayerFolder(item, null);
@@ -251,14 +262,13 @@ class LayerFolder {
     /**
      * get layerIndex of item (drawableID or folder)
      * @param {folderItem} item drawableID or folder
-     * @param {Renderer} renderer renderer
      * @returns {number} layerIndex
      */
-    getLayerIndexForItem (item, renderer = this._renderer) {
+    getLayerIndexForItem (item) {
         if (item instanceof LayerFolder) {
             return item.layerIndex;
         }
-        return renderer.getDrawableLayerIndex(item);
+        return this._renderer.getDrawableLayerIndex(item);
     }
 
     /**
@@ -279,7 +289,7 @@ class LayerFolder {
     /**
      * 排序文件夹（如果满足 orderDirty = true）
      * @param {1|-1} sortOrder 排序顺序：1升序/-1降序
-     * @param {boolean} removeFromDirtyList 清除dirty标记时，是否移出dirtyList
+     * @param {boolean} removeFromDirtyList 排序后，是否移出dirtyList
      * @param {boolean} needSorting 是否强制排序
      */
     sortIfOrderDirty (sortOrder = 1, removeFromDirtyList = false, needSorting = this.orderDirty) {
@@ -294,27 +304,52 @@ class LayerFolder {
         }
     }
 
-    static initSeparator (separators) {
-        for (let i = 0; i < separators.length; i++) {
-            const sep = separators[i];
-            sep[2] = Infinity; // 初始化分割位置为 Infinity
-            sep[3] = true; // sep是否需要读取
-        }
+    /**
+     * 初始化 separators 的信息
+     * @param {Array} separators 要更新的 separator 信息
+     * @param {1|-1} sortOrder 排序顺序：1升序/-1降序
+     */
+    static initSeparator (separators, sortOrder) {
         // 剩余的要更新的sep数量
         separators.restSeps = separators.length;
+        for (let i = 0; i < separators.length; i++) {
+            const sep = separators[i];
+            sep[2] = Infinity; // 初始化分割的列表位置为 Infinity
+            sep[3] = true; // sep是否需要读取
+            // 如果按排序值分割，且排序值选择了无穷，则不需要重新读取
+            if (sep[0] === 0 && sep[1] === Infinity * sortOrder) {
+                sep[3] = false;
+                separators.restSeps--;
+            }
+        }
     }
 
-    static checkAndSetSeparator (separators, i, item, root, sortOrder, renderer) {
+    /**
+     * 根据当前项更新 separator 信息
+     * @param {Array} separators 要更新的 separator 信息
+     * @param {number} i 当前列表位置
+     * @param {folderItem} item 当前列表项
+     * @param {boolean} root 是否是第一级文件夹
+     * @param {1|-1} sortOrder 排序顺序：1升序/-1降序
+     * @param {Renderer} renderer renderer实例
+     * @param {LayerFolder} folder 当前所在folder
+     */
+    static checkAndSetSeparator (separators, i, item, root, sortOrder, renderer, folder) {
+        // 如果所有 separator 读取完毕，直接返回
         if (separators.restSeps === 0) return;
+        // 检查每个 separator
         for (let j = 0; j < separators.length; j++) {
             const sep = separators[j];
+            // 如果 sep 需要更新
             if (sep[3]) {
+                // 判断 sep 类型
                 switch (sep[0]) {
                 case 0: {
-                // 值
-                    // itemIdx >= sepIdx，标记当前项位置为分割点
+                // 排序值
+                    // 获取item排序值
                     const layerIdx = item instanceof LayerFolder ?
                         item.layerIndex : renderer.getDrawableLayerIndex(item);
+                    // 排序值达到分割临界值，则标记分割点 i
                     if (root && sortOrder * (layerIdx - sep[1]) >= 0) {
                         sep[2] = i;
                         sep[3] = false;
@@ -324,6 +359,7 @@ class LayerFolder {
                 }
                 case 1:
                 // 角色ID
+                    // 找到drawableID，则标记分割点 i
                     if (item === sep[1]) {
                         sep[2] = i;
                         sep[3] = false;
@@ -331,11 +367,23 @@ class LayerFolder {
                     }
                     break;
                 case 2:
-                // 文件夹名
-                    if (root && (item instanceof LayerFolder) && item.name === sep[1]) {
-                        sep[2] = i;
-                        sep[3] = false;
-                        separators.restSeps--;
+                // 文件夹中的分界
+                    if (folder === sep[1][1]) {
+                        // 获取item排序值
+                        const layerIdx = item instanceof LayerFolder ?
+                            item.layerIndex : renderer.getDrawableLayerIndex(item);
+                        const lastItem = folder.items[folder.items.length - 1];
+                        // 如果idx超过分界idx
+                        if (sortOrder * (layerIdx - sep[1][0]) >= 0) {
+                            sep[2] = i;
+                            sep[3] = false;
+                            separators.restSeps--;
+                        } else if (item === lastItem) {
+                        // 未超过分界，但是文件夹中最后一项
+                            sep[2] = i + 1;
+                            sep[3] = false;
+                            separators.restSeps--;
+                        }
                     }
                     break;
                 default:
@@ -350,7 +398,7 @@ class LayerFolder {
      * @param {Array<number>} list (选填) 初始列表
      * @param {Array} separators (选填) 要更新的separators信息
      * @param {1|-1} sortOrder 排序顺序：1升序/-1降序
-     * @param {boolean} root 是否是第一层
+     * @param {boolean} root 是否是第一层文件夹
      * @returns {Array <Array<number>, Array>} [list, separators]
      */
     getItemsAndSeparators (list = [], separators = null, sortOrder = 1, root = true) {
@@ -361,7 +409,7 @@ class LayerFolder {
             const item = this._items[i];
             // 更新separators信息
             if (separators) {
-                LayerFolder.checkAndSetSeparator(separators, list.length, item, root, sortOrder, this._renderer);
+                LayerFolder.checkAndSetSeparator(separators, list.length, item, root, sortOrder, this._renderer, this);
             }
             // item 是文件夹，递归地将内容加入 list
             if (item instanceof LayerFolder) {
