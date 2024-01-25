@@ -403,7 +403,7 @@ class LayerFolder {
      */
     getItemsAndSeparators (list = [], separators = null, sortOrder = 1, root = true) {
         if (root && separators) {
-            LayerFolder.initSeparator(separators);
+            LayerFolder.initSeparator(separators, sortOrder);
         }
         for (let i = 0; i < this._items.length; i++) {
             const item = this._items[i];

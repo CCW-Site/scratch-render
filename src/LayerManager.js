@@ -162,7 +162,7 @@ class LayerManager {
      */
     refreshShaderSeparators (drawList) {
         if (this._renderer.dirty || this.separatorChanged) {
-            LayerFolder.initSeparator(this.shaderSeparators);
+            LayerFolder.initSeparator(this.shaderSeparators, this._order);
             for (let i = 0; i < drawList.length && this.shaderSeparators.restSeps > 0; i++) {
                 LayerFolder.checkAndSetSeparator(
                     this.shaderSeparators,
