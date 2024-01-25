@@ -28,6 +28,8 @@ const GandiShaderManager = require('./GandiShaderManager');
 const SpineSkin = require('./SpineSkin');
 const SpineManager = require('./SpineManager');
 
+const LayerManager = require('./LayerManager');
+
 // More pixels than this and we give up to the GPU and take the cost of readPixels
 // Width * Height * Number of drawables at location
 const __cpuTouchingColorPixelCount = 4e4;
@@ -243,6 +245,8 @@ class RenderWebGL extends EventEmitter {
         // init GandiShaderManager
         this._gandiShaderManager = new GandiShaderManager(gl, this._bufferInfo, this);
         this.spineManager = new SpineManager(this, this._gl);
+        this.layerManager = new LayerManager(this);
+
         this.on(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
 
         this.setBackgroundColor(1, 1, 1);
@@ -671,6 +675,11 @@ class RenderWebGL extends EventEmitter {
         const drawListOffset = this._endIndexForKnownLayerGroup(currentLayerGroup);
         this._drawList.splice(drawListOffset, 0, drawableID);
 
+        // 如果是sprite，记录到layerManger的defaultFolder
+        if (group === 'sprite') {
+            this.layerManager.defaultFolderDrawableAddTo.add(drawableID);
+        }
+
         this._updateOffsets('add', currentGroupOrderingIndex);
     }
 
@@ -766,57 +775,118 @@ class RenderWebGL extends EventEmitter {
         }
 
         this.dirty = true;
-        const currentLayerGroup = this._layerGroups[group];
-        const startIndex = currentLayerGroup.drawListOffset;
-        const endIndex = this._endIndexForKnownLayerGroup(currentLayerGroup);
-
-        let oldIndex = startIndex;
-        while (oldIndex < endIndex) {
-            if (this._drawList[oldIndex] === drawableID) {
-                break;
+        // 如果开启了图层管理器且是sprite层，则改变folder内顺序
+        if (this.layerManager.layerSortingEnabled && group === 'sprite') {
+            const folder = this.getDrawableLayerFolder(drawableID);
+            // 只在文件夹内部移动
+            if (folder) {
+                const ascending = this.layerManager.order;
+                folder.changeDrawableOrder(drawableID, ascending, order, optIsRelative);
             }
-            oldIndex++;
+        } else {
+        // 未开启图层管理器，使用原版的做法
+            const currentLayerGroup = this._layerGroups[group];
+            const startIndex = currentLayerGroup.drawListOffset;
+            const endIndex = this._endIndexForKnownLayerGroup(currentLayerGroup);
+
+            let oldIndex = startIndex;
+            while (oldIndex < endIndex) {
+                if (this._drawList[oldIndex] === drawableID) {
+                    break;
+                }
+                oldIndex++;
+            }
+
+            if (oldIndex < endIndex) {
+                // Remove drawable from the list.
+                if (order === 0) {
+                    return oldIndex;
+                }
+
+                const _ = this._drawList.splice(oldIndex, 1)[0];
+                // Determine new index.
+                let newIndex = order;
+                if (optIsRelative) {
+                    newIndex += oldIndex;
+                }
+
+                const possibleMin = (optMin || 0) + startIndex;
+                const min = (possibleMin >= startIndex && possibleMin < endIndex) ? possibleMin : startIndex;
+                newIndex = Math.max(newIndex, min);
+
+                newIndex = Math.min(newIndex, endIndex);
+
+                // Insert at new index.
+                this._drawList.splice(newIndex, 0, drawableID);
+                return newIndex;
+            }
         }
-
-        if (oldIndex < endIndex) {
-            // Remove drawable from the list.
-            if (order === 0) {
-                return oldIndex;
-            }
-
-            const _ = this._drawList.splice(oldIndex, 1)[0];
-            // Determine new index.
-            let newIndex = order;
-            if (optIsRelative) {
-                newIndex += oldIndex;
-            }
-
-            const possibleMin = (optMin || 0) + startIndex;
-            const min = (possibleMin >= startIndex && possibleMin < endIndex) ? possibleMin : startIndex;
-            newIndex = Math.max(newIndex, min);
-
-            newIndex = Math.min(newIndex, endIndex);
-
-            // Insert at new index.
-            this._drawList.splice(newIndex, 0, drawableID);
-            return newIndex;
-        }
-
         return null;
+    }
+
+    // 读 drawable 的图层排序值
+    getDrawableLayerIndex (drawableID) {
+        const drawable = this._allDrawables[drawableID];
+        return drawable._layerIndex;
+    }
+
+    // 更新 drawable 的图层排序值
+    setDrawableLayerIndex (drawableID, idx) {
+        const drawable = this._allDrawables[drawableID];
+        if (drawable._layerIndex !== idx) {
+            drawable._layerIndex = idx;
+            // 标记所属的图层文件夹为dirty（需要排序）
+            if (drawable._layerFolder) drawable._layerFolder.setOrderDirty(true);
+        }
+    }
+
+    getDrawableLayerFolder (drawableID) {
+        const drawable = this._allDrawables[drawableID];
+        return drawable._layerFolder;
+    }
+
+    setDrawableLayerFolder (drawableID, folder) {
+        const drawable = this._allDrawables[drawableID];
+        drawable._layerFolder = folder;
     }
 
     /**
      * Draw all current drawables and present the frame on the canvas.
      */
     draw () {
+        // 如果开启了图层管理器，从layerManager读取排好序的drawLists
+        if (this.layerManager.layerSortingEnabled) {
+
+            // 获取spriteLayerGroup的开始、结束索引
+            const spriteLayerGroup = this._layerGroups.sprite;
+            if (spriteLayerGroup) {
+                const startIndex = spriteLayerGroup.drawListOffset;
+                const endIndex = this._endIndexForKnownLayerGroup(spriteLayerGroup);
+
+                // 对 _drawList 进行排序（仅当需要重新排序时）
+                // 同时会更新用于 shader 分层渲染的 separators 的信息
+                this._drawList = this.layerManager.getSortedDrawListAndUpdateSeparators(
+                    this._drawList,
+                    startIndex,
+                    endIndex
+                );
+            }
+        } else {
+            // 未开启图层管理，仅读取 shader 的分层渲染的 separators 的信息
+            // 默认未设置分割位置的情况下，这个函数应该不会有性能消耗
+            this.layerManager.refreshShaderSeparators(this._drawList);
+        }
+        // 读取不受雷神 shader 影响的列表临界idx
+        const unshadedIdx = this.layerManager.shaderSeparators[0][2];
+
         if (!this.dirty && !this.peDirty) {
             return;
         }
         const gl = this._gl;
 
+        // 绘制受 shader 影响的部分
         if (this.dirty) {
             // should redraw all elements
-            this.dirty = false;
             this.peDirty = true; // if dirty, peDirty should be true (force to redraw post effects)
             this._doExitDrawRegion();
 
@@ -828,7 +898,9 @@ class RenderWebGL extends EventEmitter {
 
             this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection, {
                 framebufferWidth: gl.canvas.width,
-                framebufferHeight: gl.canvas.height
+                framebufferHeight: gl.canvas.height,
+                // 只绘制 unshadedIdx 之前 (即绘制受shader影响的部分)
+                endIndex: unshadedIdx
             });
         }
 
@@ -840,10 +912,23 @@ class RenderWebGL extends EventEmitter {
 
         // draw the synced effects
         this._gandiShaderManager.sync();
-
+                
+        const peDirty = this.peDirty;
         if (this.peDirty) {
             // execute post effects
             this.peDirty = this._gandiShaderManager.execPostProcessingRender();
+        }
+
+        // 继续绘制不受 shader 影响的部分
+        if (this.dirty || peDirty) {
+            this.dirty = false;
+        
+            this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection, {
+                framebufferWidth: gl.canvas.width,
+                framebufferHeight: gl.canvas.height,
+                // 只绘制 unshadedIdx 开始的drawable (即不受shader影响的部分)
+                startIndex: unshadedIdx
+            });
         }
 
         /**
@@ -1988,6 +2073,8 @@ class RenderWebGL extends EventEmitter {
      * @param {boolean} opts.ignoreVisibility Draw all, despite visibility (e.g. stamping, touching color)
      * @param {int} opts.framebufferWidth The width of the framebuffer being drawn onto. Defaults to "native" width
      * @param {int} opts.framebufferHeight The height of the framebuffer being drawn onto. Defaults to "native" height
+     * @param {int} opts.startIndex 开始绘制的索引
+     * @param {int} opts.endIndex 结束绘制的索引
      * @private
      */
     _drawThese (drawables, drawMode, projection, opts = {}) {
@@ -2003,8 +2090,10 @@ class RenderWebGL extends EventEmitter {
             opts.framebufferWidth !== this._nativeSize[0] && opts.framebufferHeight !== this._nativeSize[1]
         );
 
-        const numDrawables = drawables.length;
-        for (let drawableIndex = 0; drawableIndex < numDrawables; ++drawableIndex) {
+        const startIndex = Math.max(0, opts.startIndex ?? 0);
+        const endIndex = Math.min(drawables.length, opts.endIndex ?? drawables.length);
+
+        for (let drawableIndex = startIndex; drawableIndex < endIndex; ++drawableIndex) {
             const drawableID = drawables[drawableIndex];
 
             // If we have a filter, check whether the ID fails
