@@ -238,14 +238,14 @@ class LayerFolder {
 
             // 移到开头
             if (IdxToInsert <= 0) {
-                this._items.unshift(item);
-                const newLayerIdx = this.getLayerIndexForItem(this._items[0]) - (0.1 * sortOrder);
+                const newLayerIdx = this.getLayerIndexForItem(this._items[0]);// - (0.1 * sortOrder)
                 this.setLayerIndexForItem(item, newLayerIdx);
+                this._items.unshift(item);
             } else if (IdxToInsert > this._items.length - 1) {
             // 移到末尾
-                this._items.push(item);
-                const newLayerIdx = this.getLayerIndexForItem(this._items[0]) + (0.1 * sortOrder);
+                const newLayerIdx = this.getLayerIndexForItem(this._items.length - 1); // + (0.1 * sortOrder)
                 this.setLayerIndexForItem(item, newLayerIdx);
+                this._items.push(item);
             } else {
             // 其他情况
                 // 更新排序值，取平均值
