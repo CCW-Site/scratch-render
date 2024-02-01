@@ -7,7 +7,9 @@ class GandiShader {
         this._bufferInfo = bufferInfo;
         this._render = render;
         const onErr = (e) => {
-            throw new Error(e);
+            console.error('Gandi Shader Error - ',e)
+            this._program = null;
+            // throw new Error(e);
         };
         this._program = twgl.createProgramInfo(gl, [vert, frag], onErr);
         this.dirty = false;
