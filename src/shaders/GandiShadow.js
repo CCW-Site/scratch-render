@@ -1,15 +1,13 @@
 /* eslint-disable */
 const twgl = require('twgl.js');
-
-class GandiShadow {
+const GandiShader = require('./GandiShader');
+class GandiShadow extends GandiShader {
     constructor (gl, bufferInfo, render){
-        this._gl = gl;
-        this._bufferInfo = bufferInfo;
-        this._render = render;
-        this._program = twgl.createProgramInfo(gl, [GandiShadow.vertexShader, GandiShadow.fragmentShader]);
-        this.dirty = false;
+        super(gl, bufferInfo, render, GandiShadow.vertexShader, GandiShadow.fragmentShader);
+        this.uniforms = GandiShadow.uniforms;
+
         this.damp = .95;
-        this.bypass = 1;
+
     }
 
     static get uniforms (){
@@ -66,17 +64,10 @@ void main() {
     }
 
     render (){
-        if (!this._program) {
-            console.warn('[Gandi Render]: GandiShadow shader program is ', this._program);
+        if(this.bypass > 0 || !this.trySetupProgram()){
+            this.dirty = false;
+            return false;
         }
-        if(this.bypass > 0){
-          return false;
-        }
-        let dirty = this.dirty;
-        this._gl.useProgram(this._program.program);
-        twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
-        twgl.setUniforms(this._program, GandiShadow.uniforms);
-
 
         if (this.tOld === undefined) {
           this.tOld = twgl.createTexture(this._gl, {
@@ -84,12 +75,6 @@ void main() {
             src: this._gl.canvas
           });
         }
-
-        // this.tNew = twgl.createTexture(this._gl, {
-        //   // target: this._gl.TEXTURE_2D,
-        //   src: this._gl.canvas
-        // });
-
         twgl.setUniforms(this._program, {
             tNew: this._render.fbo.attachments[0],
             tOld: this.tOld,
@@ -98,21 +83,14 @@ void main() {
             // defaultColor: [1.0, 0.0, 1.0],
         });
 
-
-
-        this.dirty = true;
-        dirty = true;
-
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
-
         this._gl.deleteTexture(this.tOld);
-        // this._gl.deleteTexture(this.tNew);
 
         this.tOld = twgl.createTexture(this._gl, {
           src: this._gl.canvas
         });
-
-        return dirty;
+        this.dirty = true;
+        return true;
     }
 }
 module.exports = GandiShadow;

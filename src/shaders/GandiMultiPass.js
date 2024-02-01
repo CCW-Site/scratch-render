@@ -22,7 +22,7 @@ class GandiMultiPass extends GandiShader{
     #version 300 es
     precision mediump float;
 
-    
+
     uniform mat4 u_projectionMatrix;
     uniform mat4 u_modelMatrix;
     //uniform vec2 a_texCoord;
@@ -34,7 +34,7 @@ class GandiMultiPass extends GandiShader{
 
     out vec2 v_texCoord;
     out vec2 vUv;
-    
+
     void main() {
       vUv = uv;
       //gl_Position = u_projectionMatrix * u_modelMatrix * vec4(a_position*2.0, 0, 1);
@@ -50,15 +50,15 @@ class GandiMultiPass extends GandiShader{
     return /* glsl */`
     #version 300 es
     precision mediump float;
-    
-    uniform int byp; 
+
+    uniform int byp;
     uniform sampler2D tDiffuse;
-    
+
     in vec2 vUv;
     in vec2 v_texCoord;
     out vec4 outColor;
-    
-    
+
+
     void main() {
       vec2 flipped = vec2(vUv.x, 1.0 - vUv.y);
       outColor = texture(tDiffuse, v_texCoord) * 1.5;
@@ -70,7 +70,7 @@ class GandiMultiPass extends GandiShader{
   render(texture, uniforms){
     super.render();
     //debugger;
-    
+
     const gl = this._gl;
 
     let uni = {};
@@ -79,14 +79,10 @@ class GandiMultiPass extends GandiShader{
       byp: this.bypass,
       tDiffuse: texture,
     });
-
     twgl.setUniforms(this._program, uni);
 
     twgl.drawBufferInfo(gl, this._bufferInfo);
     this._gl.deleteTexture(texture);
-
   }
-
-
 }
 module.exports = GandiMultiPass;

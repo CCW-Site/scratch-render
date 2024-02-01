@@ -1,21 +1,15 @@
 /* eslint-disable */
 const twgl = require('twgl.js');
-// import { common } from './GandiGLSLCommon';
 const {common} = require('./GandiGLSLCommon');
+const GandiShader = require('./GandiShader');
 
 const TIMESTEP = 0.01;
 
-class GandiFilm {
+class GandiFilm extends GandiShader {
     constructor(gl, bufferInfo, render) {
-        this._gl = gl;
-        this._bufferInfo = bufferInfo;
-        this._render = render;
-        this._program = twgl.createProgramInfo(gl, [GandiFilm.vertexShader, GandiFilm.fragmentShader]);
+        super(gl, bufferInfo, render, GandiFilm.vertexShader, GandiFilm.fragmentShader);
         this.uniforms = GandiFilm.uniforms;
-        this.dirty = false;
-        this.bypass = 1;
         this.time = 0.1;
-
     }
 
     static get uniforms () {
@@ -93,38 +87,20 @@ void main() {
     }
 
     render () {
-        if (!this._program) {
-            console.warn('[Gandi Render]: GandiFilm shader program is ', this._program);
-        }
-        if (this.bypass > 0) {
+        if (this.bypass > 0 || !this.trySetupProgram()) {
+            this.dirty = false;
             return false;
         }
-        let dirty = this.dirty;
         this.time += TIMESTEP;
-
-        this._gl.useProgram(this._program.program);
-        twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
-        twgl.setUniforms(this._program, this.uniforms);
-
-
-        // const texture = twgl.createTexture(this._gl, {
-        //     src: this._gl.canvas
-        // });
-
         twgl.setUniforms(this._program, {
             time: this.time,
             byp: this.bypass,
             // grayscale: this.grayscale || false,
             tDiffuse: this._render.fbo.attachments[0],
-
         });
-
-        this.dirty = true;
-        dirty = true;
-
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
-        // this._gl.deleteTexture(texture);
-        return dirty;
+        this.dirty = true;
+        return this.dirty;
     }
 }
 

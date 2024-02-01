@@ -9,11 +9,10 @@ class GandiShake extends GandiShader{
   constructor (gl, bufferInfo, render){
     super(gl, bufferInfo, render, GandiShake.vertexShader, GandiShake.fragmentShader);
     this.uniforms = GandiShake.uniforms;
-    this.step = 0.05; 
+    this.step = 0.05;
     this.count = 0;
     this.skip = 1;
     this.offset =  [ 1, 1];
-    this.bypass = true;
   }
 
   shake(x, y, step = 0.05, skip = 1){
@@ -36,7 +35,7 @@ class GandiShake extends GandiShader{
     in vec2 a_position;
     in vec2 uv;
     out vec2 vUv;
-    
+
     void main() {
       vUv = uv;
       vec2 fixedPosition = a_position;
@@ -50,18 +49,18 @@ class GandiShake extends GandiShader{
     return /* glsl */`
     #version 300 es
     precision mediump float;
-    
-    uniform int byp; 
+
+    uniform int byp;
     uniform vec2 offset;
     uniform sampler2D tDiffuse;
-    
+
     in vec2 vUv;
     out vec4 outColor;
-    
+
     float rand(vec2 co){
       return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
     }
-    
+
     void main() {
       if(byp<1) {
         vec2 p = vUv;
@@ -75,10 +74,11 @@ class GandiShake extends GandiShader{
   `;
   }
   render(){
-    if (this.bypass > 0) {
-      return false;
+    if (this.bypass > 0 || !this.trySetupProgram()) {
+        this.dirty = false;
+        return false;
     }
-    
+
     const xRange = Math.max(0, this.offset[0]);
     const yRange = Math.max(0, this.offset[1]);
 
@@ -96,27 +96,16 @@ class GandiShake extends GandiShader{
       return true;
     }
 
-    super.render();
-    let dirty =  this.dirty;
     const gl = this._gl;
-
-    console.info('offset', this.offset);
-
     twgl.setUniforms(this._program, {
       byp: this.bypass,
       tDiffuse: this._render.fbo.attachments[0],
       offset: [MathUtils.randFloat(-xRange, xRange),MathUtils.randFloat(-yRange, yRange)],
     });
-
     twgl.drawBufferInfo(gl, this._bufferInfo);
-    //twgl.drawBufferInfo(gl, this._render.fbo.bufferInfo);
 
-    //this._gl.deleteTexture(textureDiff);
-
-    dirty = true;
-    this.dirty = dirty;
-
-    return dirty;
+    this.dirty = true;
+    return true;
   }
 
 

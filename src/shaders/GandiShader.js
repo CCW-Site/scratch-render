@@ -13,7 +13,7 @@ class GandiShader {
         };
         this._program = twgl.createProgramInfo(gl, [vert, frag], onErr);
         this.dirty = false;
-        this.bypass = 1;
+        this.bypass = true;
     }
 
     static get uniforms () {
@@ -33,26 +33,24 @@ precision mediump float;
 #endif
 `;
     }
-
-    __setupProgram () {
-        if (this._program == null || this._program.program == null) {
-            return;
+    trySetupProgram () {
+        if (!this._program || this._program == null || this._program.program == null) {
+            return false;
         }
         this._gl.useProgram(this._program.program);
         twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
         twgl.setUniforms(this._program, this.uniforms);
+        return true;
     }
 
     render () {
-        if (!this._program) {
-            console.warn('[Gandi Render]: GandiShader program is ', this._program);
-        }
-        if (this.bypass > 0) {
+        // need override
+        if (this.bypass > 0 || !this.trySetupProgram()) {
+            this.dirty = false;
             return false;
         }
-        this.__setupProgram();
-
-
+        this.dirty = true;
+        return true;
     }
 }
 module.exports = GandiShader;

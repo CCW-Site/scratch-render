@@ -30,14 +30,14 @@ void main() {
 
     in vec2 vUv;
     out vec4 fragColor;
-    
+
     uniform sampler2D fboOriginal;
     uniform sampler2D fboPostProcessing;
-    
-    
+
+
     void main() {
         vec2 fragCoord = vUv;
-        
+
         //fragColor = texture(fboOriginal, fragCoord);
         //fragColor = vec4(1.0,0.0,1.0,1.0);
         vec4 synced = texture(fboOriginal, fragCoord);
@@ -51,7 +51,7 @@ void main() {
     const frag = GandiSync.fragmentShader;
     const config = { passTexture : true, useTimer : false , step: 1 };
     super(gl, bufferInfo, render, vert, frag);
-    this.bypass = 0;
+    this.bypass = false;
     this.config = config;
     this.uniforms = uniforms;
     this.renderLoop = renderLoop;
@@ -59,43 +59,31 @@ void main() {
       this.time = 0;
       this.step = config.step;
     }
-    
+
   }
 
   render (){
     if (this.config.useTimer) {
       this.time += this.step;
     }
-    
-    // if (this.bypass > 0) {
-    //   return false;
-    // }
+
+    if (!this.trySetupProgram()) {
+        return false;
+    }
 
     if (this.renderLoop) {
       this.uniforms = this.renderLoop( this.uniforms, this.time);
     }
 
     const gl = this._gl;
-    super.render();
-
-    
 
     twgl.setUniforms(this._program, {
       byp: this.bypass,
       fboOriginal: this._render.fbo.attachments[0],
       fboPostProcessing: this._render.fbo.attachments[0],
-    });    
+    });
 
     twgl.drawBufferInfo(gl, this._bufferInfo);
-
-    // console.info('synced');
-
-    // console.info('render');
-    // if (textureDiff) {
-    //   this._gl.deleteTexture(textureDiff);
-    // }
-    //this.dirty = true;
-    //let dirty =  this.dirty;
     return false;
   }
 }

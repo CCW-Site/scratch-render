@@ -1,16 +1,12 @@
+// NOTE this shader is not in use
 /* eslint-disable */
 const twgl = require('twgl.js');
-
-class GandiComics {
+const GandiShader = require('./GandiShader');
+class GandiComics extends GandiShader {
     constructor(gl, bufferInfo, render) {
-        this._gl = gl;
-        this._bufferInfo = bufferInfo;
-        this._render = render;
-        this._program = twgl.createProgramInfo(gl, [GandiComics.vertexShader, GandiComics.fragmentShader]);
+        super(gl, bufferInfo, render, GandiComics.vertexShader, GandiComics.fragmentShader);
         this.uniforms = GandiComics.uniforms;
         this.uniforms.tSize = [480, 360];
-        this.dirty = false;
-        this.bypass = 1;
     }
 
     static get uniforms () {
@@ -65,33 +61,15 @@ void main() {
     }
 
     render () {
-        if (!this._program) {
-            console.warn('[Gandi Render]: GandiComics shader program is ', this._program);
-        }
-        if (this.bypass > 0) {
+        if (this.bypass > 0 || !this.trySetupProgram()) {
             return false;
         }
-        let dirty = this.dirty;
-
-        this._gl.useProgram(this._program.program);
-        twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
-        twgl.setUniforms(this._program, this.uniforms);
-
-
-        // const texture = twgl.createTexture(this._gl, {
-        //     src: this._gl.canvas
-        // });
-
         twgl.setUniforms(this._program, {
             tDiffuse: this._render.fbo.attachments[0],
         });
-
-        this.dirty = true;
-        dirty = true;
-
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
-        // this._gl.deleteTexture(texture);
-        return dirty;
+        this.dirty = true;
+        return true;
     }
 }
 
