@@ -860,7 +860,8 @@ class RenderWebGL extends EventEmitter {
             // 获取spriteLayerGroup的开始、结束索引
             const spriteLayerGroup = this._layerGroups.sprite;
             if (spriteLayerGroup) {
-                const startIndex = spriteLayerGroup.drawListOffset;
+                // 取max(offset, 1) 避免某些奇怪的情况下将 0（舞台） 包含进排序
+                const startIndex = Math.max(spriteLayerGroup.drawListOffset, 1);
                 const endIndex = this._endIndexForKnownLayerGroup(spriteLayerGroup);
 
                 // 对 _drawList 进行排序（仅当需要重新排序时）

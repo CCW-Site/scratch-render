@@ -238,14 +238,14 @@ class LayerFolder {
 
             // 移到开头
             if (IdxToInsert <= 0) {
-                this._items.unshift(item);
-                const newLayerIdx = this.getLayerIndexForItem(this._items[0]) - (0.1 * sortOrder);
+                const newLayerIdx = this.getLayerIndexForItem(this._items[0]);// - (0.1 * sortOrder)
                 this.setLayerIndexForItem(item, newLayerIdx);
+                this._items.unshift(item);
             } else if (IdxToInsert > this._items.length - 1) {
             // 移到末尾
-                this._items.push(item);
-                const newLayerIdx = this.getLayerIndexForItem(this._items[0]) + (0.1 * sortOrder);
+                const newLayerIdx = this.getLayerIndexForItem(this._items.length - 1); // + (0.1 * sortOrder)
                 this.setLayerIndexForItem(item, newLayerIdx);
+                this._items.push(item);
             } else {
             // 其他情况
                 // 更新排序值，取平均值
@@ -403,7 +403,7 @@ class LayerFolder {
      */
     getItemsAndSeparators (list = [], separators = null, sortOrder = 1, root = true) {
         if (root && separators) {
-            LayerFolder.initSeparator(separators);
+            LayerFolder.initSeparator(separators, sortOrder);
         }
         for (let i = 0; i < this._items.length; i++) {
             const item = this._items[i];
