@@ -243,7 +243,9 @@ class LayerFolder {
                 this._items.unshift(item);
             } else if (IdxToInsert > this._items.length - 1) {
             // 移到末尾
-                const newLayerIdx = this.getLayerIndexForItem(this._items.length - 1); // + (0.1 * sortOrder)
+                const newLayerIdx = this.getLayerIndexForItem(
+                    this._items[this._items.length - 1]
+                ); // + (0.1 * sortOrder)
                 this.setLayerIndexForItem(item, newLayerIdx);
                 this._items.push(item);
             } else {
