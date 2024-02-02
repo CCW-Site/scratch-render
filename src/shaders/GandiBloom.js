@@ -6,7 +6,6 @@ class GandiBloom extends GandiShader {
   constructor (gl, bufferInfo, render){
     super(gl, bufferInfo, render, GandiBloom.vertexShader, GandiBloom.fragmentShader);
     this.uniforms = GandiBloom.uniforms;
-    this.dirty = false; // default turned off
 }
 
     static get uniforms (){
@@ -45,7 +44,7 @@ uniform sampler2D tDiffuse;
 varying vec2 vUv;
 
 vec3 makeBloom(float lod, vec2 offset, vec2 bCoord, sampler2D tex){
-    
+
   vec2 pixelSize = 1.0 / vec2(1.0, 1.0);
 
   offset += pixelSize;
@@ -98,28 +97,18 @@ void main( )
     }
 
     render (){
-      if (this.bypass > 0) {
+      if (this.bypass > 0 || !this.trySetupProgram()) {
+        this.dirty = false;
         return false;
       }
-      super.render();
-
-      let dirty = this.dirty;
-      const gl = this._gl;
-
-      // const textureDiff = twgl.createTexture(gl, {
-      //   src: gl.canvas
-      // });
       twgl.setUniforms(this._program, {
         byp: this.bypass,
         tDiffuse: this._render.fbo.attachments[0],
       });
 
-      this.dirty = true;
-      dirty = true;
-
       twgl.drawBufferInfo(this._gl, this._bufferInfo);
-      // this._gl.deleteTexture(texture);
-      return dirty;
+      this.dirty = true;
+      return true;
     }
 }
 module.exports = GandiBloom;

@@ -9,26 +9,15 @@
  * angle: shift angle in radians
  */
 const twgl = require('twgl.js');
-// import {
-//     DataTexture,
-//     FloatType,
-//     MathUtils,
-//     RedFormat
-// } from 'three';
+const GandiShader = require('./GandiShader');
 
 const {DataTexture, FloatType, MathUtils, RedFormat} = require('three');
 
-class GandiGlitch {
+class GandiGlitch extends GandiShader {
     constructor(gl, bufferInfo, render) {
-        this._gl = gl;
-        this._bufferInfo = bufferInfo;
-        this._render = render;
-        this._program = twgl.createProgramInfo(gl, [GandiGlitch.vertexShader, GandiGlitch.fragmentShader]);
-        this._uniforms = GandiGlitch.uniforms;
+        super(gl, bufferInfo, render, GandiGlitch.vertexShader, GandiGlitch.fragmentShader);
+        this.uniforms = GandiGlitch.uniforms;
         this._duration = 0;
-        this.dirty = false;
-        this.bypass = 0;
-        // window.glitch = this;
         this.options = {
             amount: 100.0,
             distortion: 1.0,
@@ -152,29 +141,18 @@ precision mediump float;
     }
 
     render () {
-        if (!this._program) {
-            console.warn('[Gandi Render]: GandiGlitch shader program is ', this._program);
-        }
-        if (this.bypass > 0) {
+        if (this.bypass > 0 || !this.trySetupProgram()) {
             return false;
         }
-        let dirty = this.dirty;
         this._duration--;
         if (this._duration < 0) {
             this.dirty = false;
-            return dirty;
+            return false;
         }
-        this._gl.useProgram(this._program.program);
-        twgl.setBuffersAndAttributes(this._gl, this._program, this._bufferInfo);
-
         const heightMap = this.generateHeightmap(64);
         const texture = twgl.createTexture(this._gl, {
             src: heightMap.image.data
         });
-        // const textureDiff = twgl.createTexture(this._gl, {
-        //     src: this._gl.canvas
-        // });
-        twgl.setUniforms(this._program, this._uniforms);
         twgl.setUniforms(this._program, {
             byp: this.bypass,
             tDisp: texture || 0,
@@ -186,19 +164,10 @@ precision mediump float;
             distortion_y: MathUtils.randFloat(0, this.options.distortion),
             angle: MathUtils.randFloat(-Math.PI, Math.PI)
         });
-        dirty = true;
-
-        if (this._duration < 0) {
-            twgl.setUniforms(this._program, {
-                byp: 1
-            });
-            dirty = false;
-            this.dirty = false;
-        }
         twgl.drawBufferInfo(this._gl, this._bufferInfo);
         this._gl.deleteTexture(texture);
-        //this._gl.deleteTexture(textureDiff);
-        return dirty;
+        this.dirty = true;
+        return true;
     }
 
 }

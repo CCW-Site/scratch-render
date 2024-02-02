@@ -34,7 +34,7 @@ class GandiShaderManager {
     unregister (name) {
         if (this.effectors.has(name)) {
             const oldEffector = this.effectors.get(name);
-            oldEffector.bypass = 1;
+            oldEffector.bypass = true;
             const newPP = this.postProcessing.filter(pp => pp !== oldEffector);
             this.postProcessing = newPP;
             this.effectors.delete(name);
@@ -46,6 +46,7 @@ class GandiShaderManager {
         if (vertex === null && frag === null){
             // load default
             switch (name) {
+            //  TODO： cache shader object dont need new everytime
             case 'glitch':
                 effector = new GandiGlitch(this._gl, this._bufferInfo, this._render);
                 break;
@@ -73,7 +74,7 @@ class GandiShaderManager {
                 this._gl, this._bufferInfo, this._render,
                 vertex, frag, uniforms, renderLoop, config);
         }
-        
+
         this.unregister(name);
 
         effector.bypass = bypass;
@@ -97,9 +98,9 @@ class GandiShaderManager {
         return dirty;
     }
 
-    sync(){
+    sync (){
         this.syncShader.render();
     }
-  
+
 }
 module.exports = GandiShaderManager;
