@@ -948,16 +948,19 @@ class RenderWebGL extends EventEmitter {
             });
         }
 
-        /**
-         * 旧版：CanvasRenderReady 之前是在scratch-gui 中触发，接收的是gl.canvas 但是会导致录屏闪屏
-         * 新版：从render中直接触发 CanvasRenderReady 将canvas传递至 gui 进行录屏
-         */
-        this.emit('CanvasRenderReady', gl.canvas);
-        if (this._snapshotCallbacks.length > 0) {
-            const snapshot = gl.canvas.toDataURL();
-            this._snapshotCallbacks.forEach(cb => cb(snapshot));
-            this._snapshotCallbacks = [];
-        }
+
+        // NOTE： 这代码也太低效了。去掉先
+        // 录屏功能请使用浏览器方案
+        // /**
+        //  * 旧版：CanvasRenderReady 之前是在scratch-gui 中触发，接收的是gl.canvas 但是会导致录屏闪屏
+        //  * 新版：从render中直接触发 CanvasRenderReady 将canvas传递至 gui 进行录屏
+        //  */
+        // this.emit('CanvasRenderReady', gl.canvas);
+        // if (this._snapshotCallbacks.length > 0) {
+        //     const snapshot = gl.canvas.toDataURL();
+        //     this._snapshotCallbacks.forEach(cb => cb(snapshot));
+        //     this._snapshotCallbacks = [];
+        // }
     }
 
 
