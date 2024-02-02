@@ -688,7 +688,7 @@ class RenderWebGL extends EventEmitter {
             const laterGroupName = this._groupOrdering[i];
             if (updateType === 'add') {
                 this._layerGroups[laterGroupName].drawListOffset++;
-            } else if (updateType === 'delete'){
+            } else if (updateType === 'delete') {
                 this._layerGroups[laterGroupName].drawListOffset--;
             }
         }
@@ -784,7 +784,7 @@ class RenderWebGL extends EventEmitter {
                 folder.changeDrawableOrder(drawableID, ascending, order, optIsRelative);
             }
         } else {
-        // 未开启图层管理器，使用原版的做法
+            // 未开启图层管理器，使用原版的做法
             const currentLayerGroup = this._layerGroups[group];
             const startIndex = currentLayerGroup.drawListOffset;
             const endIndex = this._endIndexForKnownLayerGroup(currentLayerGroup);
@@ -854,6 +854,9 @@ class RenderWebGL extends EventEmitter {
      * Draw all current drawables and present the frame on the canvas.
      */
     draw () {
+        if (!this.dirty && !this.peDirty) {
+            return;
+        }
         // 如果开启了图层管理器，从layerManager读取排好序的drawLists
         if (this.layerManager.layerSortingEnabled) {
 
@@ -880,55 +883,68 @@ class RenderWebGL extends EventEmitter {
         // 读取不受雷神 shader 影响的列表临界idx
         const unshadedIdx = this.layerManager.shaderSeparators[0][2];
 
-        if (!this.dirty && !this.peDirty) {
-            return;
-        }
+
         const gl = this._gl;
+        if (this._gandiShaderManager.isSupported) {
 
-        // 绘制受 shader 影响的部分
-        if (this.dirty) {
-            // should redraw all elements
-            this.peDirty = true; // if dirty, peDirty should be true (force to redraw post effects)
+            // 绘制受 shader 影响的部分
+            if (this.dirty) {
+                // should redraw all elements
+                this.peDirty = true; // if dirty, peDirty should be true (force to redraw post effects)
+                this._doExitDrawRegion();
+
+                gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo.framebuffer);
+                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+                gl.clearColor(...this._backgroundColor4f);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection, {
+                    framebufferWidth: gl.canvas.width,
+                    framebufferHeight: gl.canvas.height,
+                    // 只绘制 unshadedIdx 之前 (即绘制受shader影响的部分)
+                    endIndex: unshadedIdx
+                });
+            }
+
+            // switch to default framebuffer
+            twgl.bindFramebufferInfo(gl, null);
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            gl.clearColor(...this._backgroundColor4f);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            // draw the synced effects
+            this._gandiShaderManager.sync();
+
+            const peDirty = this.peDirty;
+            if (this.peDirty) {
+                // execute post effects
+                this.peDirty = this._gandiShaderManager.execPostProcessingRender();
+            }
+
+            // 继续绘制不受 shader 影响的部分
+            if (this.dirty || peDirty) {
+                this.dirty = false;
+
+                this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection, {
+                    framebufferWidth: gl.canvas.width,
+                    framebufferHeight: gl.canvas.height,
+                    // 只绘制 unshadedIdx 开始的drawable (即不受shader影响的部分)
+                    startIndex: unshadedIdx
+                });
+            }
+        } else {
+            // unsupported gandi shader use normal draw
+            this.dirty = false;
+            this.peDirty = false;
             this._doExitDrawRegion();
-
-            gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo.framebuffer);
-            // twgl.bindFramebufferInfo(gl, null);
+            twgl.bindFramebufferInfo(gl, null);
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             gl.clearColor(...this._backgroundColor4f);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
             this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection, {
                 framebufferWidth: gl.canvas.width,
-                framebufferHeight: gl.canvas.height,
-                // 只绘制 unshadedIdx 之前 (即绘制受shader影响的部分)
-                endIndex: unshadedIdx
-            });
-        }
-
-        // switch to default framebuffer
-        twgl.bindFramebufferInfo(gl, null);
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        gl.clearColor(...this._backgroundColor4f);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        // draw the synced effects
-        this._gandiShaderManager.sync();
-                
-        const peDirty = this.peDirty;
-        if (this.peDirty) {
-            // execute post effects
-            this.peDirty = this._gandiShaderManager.execPostProcessingRender();
-        }
-
-        // 继续绘制不受 shader 影响的部分
-        if (this.dirty || peDirty) {
-            this.dirty = false;
-        
-            this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection, {
-                framebufferWidth: gl.canvas.width,
-                framebufferHeight: gl.canvas.height,
-                // 只绘制 unshadedIdx 开始的drawable (即不受shader影响的部分)
-                startIndex: unshadedIdx
+                framebufferHeight: gl.canvas.height
             });
         }
 
@@ -1937,7 +1953,7 @@ class RenderWebGL extends EventEmitter {
             // stampDrawable.skin.render.batcher.lastTexture;
 
         } else {
-        // Draw the stamped sprite onto the PenSkin's framebuffer.
+            // Draw the stamped sprite onto the PenSkin's framebuffer.
             this._drawThese([stampID], ShaderManager.DRAW_MODE.default, projection, {
                 ignoreVisibility: true,
                 framebufferWidth: this._nativeSize[0] * skin.renderQuality,

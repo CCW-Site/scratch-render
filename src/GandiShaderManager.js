@@ -31,6 +31,10 @@ class GandiShaderManager {
         // this.register('shadow', false);
     }
 
+    get isSupported () {
+        return !!this.syncShader._program;
+    }
+
     unregister (name) {
         if (this.effectors.has(name)) {
             const oldEffector = this.effectors.get(name);

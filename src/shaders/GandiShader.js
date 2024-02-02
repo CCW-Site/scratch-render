@@ -14,6 +14,8 @@ class GandiShader {
         this._program = twgl.createProgramInfo(gl, [vert, frag], onErr);
         this.dirty = false;
         this.bypass = true;
+        // for unsupported test
+        // this._program = null;
     }
 
     static get uniforms () {
