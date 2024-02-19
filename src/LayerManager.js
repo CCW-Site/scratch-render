@@ -74,6 +74,13 @@ class LayerManager {
     }
 
     /**
+     * @returns {boolean} 是否需要重新图层排序
+     */
+    get needResort () {
+        return this.layerSortingEnabled && LayerFolder.visualDirty;
+    }
+
+    /**
      * 将 drawList 中 sprite 图层进行排序并返回
      * @param {Array<number>} drawList 当前要绘制的drawableID的列表
      * @param {number} startIdx spriteLayer的开始索引

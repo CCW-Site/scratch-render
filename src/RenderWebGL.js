@@ -854,7 +854,7 @@ class RenderWebGL extends EventEmitter {
      * Draw all current drawables and present the frame on the canvas.
      */
     draw () {
-        if (!this.dirty && !this.peDirty) {
+        if (!this.dirty && !this.peDirty && !this.layerManager.needResort) {
             return;
         }
         // 如果开启了图层管理器，从layerManager读取排好序的drawLists
