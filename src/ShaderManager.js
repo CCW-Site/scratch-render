@@ -162,6 +162,10 @@ ShaderManager.EXTRA_EFFECT_INFO = {
     tile: {
         mask: 1 << 14,
         shapeChanges: true
+    },
+    clipBox: {
+        mask: 1 << 15,
+        shapeChanges: true
     }
 };
 

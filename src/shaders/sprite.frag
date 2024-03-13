@@ -68,6 +68,11 @@ uniform vec4 u_tintColor;
 uniform vec2 u_tileSize;
 #endif
 
+#ifdef ENABLE_clipBox
+uniform int u_clipBoxMode; // 0: ignore, 1: rectangle, 2: circle
+uniform vec4 u_clipBoxShape; // 1: rectangle: centerX, centerY, width, height; 2: circle: x, y, radius, unused
+#endif
+
 // Add this to divisors to prevent division by 0, which results in NaNs propagating through calculations.
 // Smaller values can cause problems on some mobile devices.
 const float epsilon = 1e-3;
@@ -270,6 +275,22 @@ void main() {
 		texcoord0 = fract(u_tileSize * texcoord0);
 	}
 	#endif // ENABLE_tile
+
+	#ifdef ENABLE_clipBox
+	if(u_clipBoxMode == 1) {
+		// u_clipBoxShape: [centerX, centerY, width, height]
+		vec2 clipLowerLeft = u_clipBoxShape.xy - vec2(u_clipBoxShape.z, u_clipBoxShape.w) * 0.5;
+		vec2 clipUpperRight = u_clipBoxShape.xy + vec2(u_clipBoxShape.z, u_clipBoxShape.w) * 0.5;
+		if(texcoord0.x < clipLowerLeft.x || texcoord0.x > clipUpperRight.x || texcoord0.y < clipLowerLeft.y || texcoord0.y > clipUpperRight.y) {
+			discard;
+		}
+	} else if(u_clipBoxMode == 2) {
+		// u_clipBoxShape: [centerX, centerY, radius, unused]
+		if(distance(u_clipBoxShape.xy, texcoord0) > u_clipBoxShape.z) {
+			discard;
+		}
+	}
+	#endif // ENABLE_clipBox
 
 	#ifdef ENABLE_gaussianBlur
 	gl_FragColor = blur(u_skin, texcoord0);
