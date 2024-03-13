@@ -148,16 +148,20 @@ ShaderManager.EFFECT_INFO = {
 
 ShaderManager.EXTRA_EFFECT_INFO = {
     nineSlice: {
-        mask: 1 << 0,
+        mask: 1 << 11,
         shapeChanges: true
     },
     gaussianBlur: {
-        mask: 1 << 1,
+        mask: 1 << 12,
         shapeChanges: false
     },
     tint: {
-        mask: 1 << 2,
+        mask: 1 << 13,
         shapeChanges: false
+    },
+    tile: {
+        mask: 1 << 14,
+        shapeChanges: true
     }
 };
 

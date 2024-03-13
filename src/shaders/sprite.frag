@@ -1,4 +1,5 @@
 precision mediump float;
+precision mediump int;
 
 #ifdef DRAW_MODE_silhouette
 uniform vec4 u_silhouetteColor;
@@ -63,6 +64,10 @@ uniform vec2 u_gaussianBlurSkinSize;
 uniform vec4 u_tintColor;
 #endif
 
+#ifdef ENABLE_tile
+uniform vec2 u_tileSize;
+#endif
+
 // Add this to divisors to prevent division by 0, which results in NaNs propagating through calculations.
 // Smaller values can cause problems on some mobile devices.
 const float epsilon = 1e-3;
@@ -123,49 +128,49 @@ vec3 convertHSV2RGB(vec3 hsv) {
 const vec2 kCenter = vec2(0.5, 0.5);
 
 #ifdef ENABLE_nineSlice
-vec2 scale9Slice(vec2 texcoord) {
-	texcoord = texcoord * u_nineSliceScale;
+vec2 scale9Slice(vec2 texcoord, vec2 scale, vec4 padding, int mode) {
+	texcoord = texcoord * scale;
 
-	float left = u_nineSlicePadding.x;
-	float top = u_nineSlicePadding.y;
-	float right = u_nineSlicePadding.z;
-	float bottom = u_nineSlicePadding.w;
-	float xScaled = (u_nineSliceScale.x - left - right) / (1.0 - left - right);
-	float yScaled = (u_nineSliceScale.y - top - bottom) / (1.0 - top - bottom);
+	float left = padding.x;
+	float top = padding.y;
+	float right = padding.z;
+	float bottom = padding.w;
+	float xScaled = (scale.x - left - right) / (1.0 - left - right);
+	float yScaled = (scale.y - top - bottom) / (1.0 - top - bottom);
 
 	vec2 uv = texcoord;
 
 	if(texcoord.x <= left && texcoord.y <= top) {
 		// top left corner
 		// do nothing
-	} else if(texcoord.x >= u_nineSliceScale.x - right && texcoord.y <= top) {
+	} else if(texcoord.x >= scale.x - right && texcoord.y <= top) {
 		// right top corner
-		uv.x = 1.0 - (u_nineSliceScale.x - texcoord.x);
-	} else if(texcoord.x <= left && texcoord.y >= u_nineSliceScale.y - bottom) {
+		uv.x = 1.0 - (scale.x - texcoord.x);
+	} else if(texcoord.x <= left && texcoord.y >= scale.y - bottom) {
 		// bottom left corner
-		uv.y = 1.0 - (u_nineSliceScale.y - texcoord.y);
-	} else if(texcoord.x >= u_nineSliceScale.x - right && texcoord.y >= u_nineSliceScale.y - bottom) {
+		uv.y = 1.0 - (scale.y - texcoord.y);
+	} else if(texcoord.x >= scale.x - right && texcoord.y >= scale.y - bottom) {
 		// bottom right corner
-		uv = vec2(1.0 - (u_nineSliceScale.x - texcoord.x), 1.0 - (u_nineSliceScale.y - texcoord.y));
-	} else if(texcoord.x > left && texcoord.x < u_nineSliceScale.x - right && (texcoord.y < top || texcoord.y > u_nineSliceScale.y - bottom)) {
+		uv = vec2(1.0 - (scale.x - texcoord.x), 1.0 - (scale.y - texcoord.y));
+	} else if(texcoord.x > left && texcoord.x < scale.x - right && (texcoord.y < top || texcoord.y > scale.y - bottom)) {
 		// between left and right on top or bottom
 		uv.x = fract((texcoord.x - left) / xScaled) + left;
 		uv.y = fract(uv.y);
-	} else if(texcoord.y > top && texcoord.y < u_nineSliceScale.y - bottom && (texcoord.x < left || texcoord.x > u_nineSliceScale.x - right)) {
+	} else if(texcoord.y > top && texcoord.y < scale.y - bottom && (texcoord.x < left || texcoord.x > scale.x - right)) {
 		// bettween top and bottom on left or right
 		uv.x = fract(uv.x);
 		uv.y = fract((texcoord.y - top) / yScaled) + top;
 	} else {
 		// center
-		if(u_nineSliceMode == 1) {
+		if(mode == 1) {
 			// stretch
 			uv.x = fract((texcoord.x - left) / xScaled) + left;
 			uv.y = fract((texcoord.y - top) / yScaled) + top;
-		} else if(u_nineSliceMode == 2) {
+		} else if(mode == 2) {
 			// tile
 			uv.x = mod(texcoord.x - left, 1.0 - left - right) + left;
 			uv.y = mod(texcoord.y - top, 1.0 - top - bottom) + top;
-		} else if(u_nineSliceMode == 3) {
+		} else if(mode == 3) {
 			discard;
 		}
 	}
@@ -256,9 +261,15 @@ void main() {
 
 	#ifdef ENABLE_nineSlice
 	if(u_nineSliceMode != 0) {
-		texcoord0 = scale9Slice(texcoord0);
+		texcoord0 = scale9Slice(texcoord0, u_nineSliceScale, u_nineSlicePadding, u_nineSliceMode);
 	}
 	#endif // ENABLE_nineSlice
+
+	#ifdef ENABLE_tile
+	{
+		texcoord0 = fract(u_tileSize * texcoord0);
+	}
+	#endif // ENABLE_tile
 
 	#ifdef ENABLE_gaussianBlur
 	gl_FragColor = blur(u_skin, texcoord0);
