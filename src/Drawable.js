@@ -54,6 +54,11 @@ const getLocalPosition = (drawable, vec) => {
     return localPosition;
 };
 
+const capitalizeFirstLetter = string => {
+    if (!string) return string;
+    return string.charAt(0).toUpperCase() + string.slice(1);
+};
+
 class Drawable {
     /**
      * An object which can be drawn by the renderer.
@@ -139,6 +144,10 @@ class Drawable {
          * @type {LayerFolder}
          */
         this._layerFolder = null;
+
+        this.enabledExtraEffect = 0;
+        // key: effectName, value: uniforms
+        this.extraEffectUniforms = {};
     }
 
     setHighQuality (highQuality) {
@@ -299,6 +308,57 @@ class Drawable {
         this._uniforms[effectInfo.uniformName] = converter(rawValue);
         if (effectInfo.shapeChanges) {
             this.setConvexHullDirty();
+        }
+    }
+
+    /**
+     * Update an extra effect.
+     * @param {string} effectName The name of the effect.
+     * @param {object.<string,*>|undefined} uniforms A new effect value. if undefined, the effect will be disabled.
+     */
+    updateExtraEffect (effectName, uniforms) {
+        this._renderer.dirty = true;
+        const effectInfo = ShaderManager.EXTRA_EFFECT_INFO[effectName];
+        if (!effectInfo) {
+            log.warn(`Unknown extra effect: ${effectName}`);
+            return;
+        }
+        if (uniforms) {
+            this.enabledExtraEffect |= effectInfo.mask;
+            // Convert the uniforms to the format expected by the shader
+            this.extraEffectUniforms[effectName] = Object.keys(uniforms).reduce((acc, key) => {
+                const newKey = `u_${effectName}${capitalizeFirstLetter(key)}`;
+                acc[newKey] = uniforms[key];
+                return acc;
+            }, {});
+        } else {
+            this.enabledExtraEffect &= ~effectInfo.mask;
+            delete this.extraEffectUniforms[effectName];
+        }
+        if (effectInfo.shapeChanges) {
+            this.setConvexHullDirty();
+        }
+    }
+
+    clearExtraEffects () {
+        this._renderer.dirty = true;
+        this.enabledExtraEffect = 0;
+        this.extraEffectUniforms = {};
+    }
+
+    hasExtraEffect (effectName) {
+        const effectInfo = ShaderManager.EXTRA_EFFECT_INFO[effectName];
+        if (!effectInfo) {
+            log.warn(`Unknown extra effect: ${effectName}`);
+            return false;
+        }
+        return (this.enabledExtraEffect & effectInfo.mask) !== 0;
+    }
+
+    injectExtraEffectUniforms (uniforms) {
+        for (const effectName in this.extraEffectUniforms) {
+            this.extraEffectUniforms[effectName] = this.extraEffectUniforms[effectName] || {};
+            Object.assign(uniforms, this.extraEffectUniforms[effectName]);
         }
     }
 
@@ -754,9 +814,9 @@ class Drawable {
         }
 
         const textColor =
-        // commenting out to only use nearest for now
-        // drawable.skin.useNearest(drawable._scale, drawable) ?
-             drawable.skin._silhouette.colorAtNearest(localPosition, dst);
+            // commenting out to only use nearest for now
+            // drawable.skin.useNearest(drawable._scale, drawable) ?
+            drawable.skin._silhouette.colorAtNearest(localPosition, dst);
         // : drawable.skin._silhouette.colorAtLinear(localPosition, dst);
 
         if (drawable.enabledEffects === 0) return textColor;

@@ -60,6 +60,11 @@ class ShaderManager {
                 defines.push(`#define ENABLE_${ShaderManager.EFFECTS[index]}`);
             }
         }
+        for (const name in ShaderManager.EXTRA_EFFECT_INFO) {
+            if ((effectBits & ShaderManager.EXTRA_EFFECT_INFO[name].mask) !== 0) {
+                defines.push(`#define ENABLE_${name}`);
+            }
+        }
 
         const definesText = `${defines.join('\n')}\n`;
 
@@ -137,6 +142,21 @@ ShaderManager.EFFECT_INFO = {
         uniformName: 'u_ghost',
         mask: 1 << 6,
         converter: x => 1 - (Math.max(0, Math.min(x, 100)) / 100),
+        shapeChanges: false
+    }
+};
+
+ShaderManager.EXTRA_EFFECT_INFO = {
+    nineSlice: {
+        mask: 1 << 17,
+        shapeChanges: true
+    },
+    gaussianBlur: {
+        mask: 1 << 18,
+        shapeChanges: false
+    },
+    tint: {
+        mask: 1 << 19,
         shapeChanges: false
     }
 };

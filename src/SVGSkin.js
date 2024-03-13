@@ -84,6 +84,11 @@ class SVGSkin extends Skin {
         )) !== 0) {
             return false;
         }
+        if ((drawable.enabledExtraEffects & (
+            ShaderManager.EXTRA_EFFECT_INFO.gaussianBlur.mask
+        )) !== 0) {
+            return false;
+        }
 
         // We can't use nearest neighbor unless we are a multiple of 90 rotation
         if (drawable._direction % 90 !== 0) {

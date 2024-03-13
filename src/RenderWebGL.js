@@ -2095,7 +2095,6 @@ class RenderWebGL extends EventEmitter {
      * @private
      */
     _drawThese (drawables, drawMode, projection, opts = {}) {
-
         const gl = this._gl;
         let currentShader = null;
         if (this.spineManager) {
@@ -2148,6 +2147,10 @@ class RenderWebGL extends EventEmitter {
 
             let effectBits = drawable.enabledEffects;
             effectBits &= Object.prototype.hasOwnProperty.call(opts, 'effectMask') ? opts.effectMask : effectBits;
+            if (drawable.enabledExtraEffect !== 0) {
+                effectBits |= drawable.enabledExtraEffect;
+                drawable.injectExtraEffectUniforms(uniforms);
+            }
             const newShader = this._shaderManager.getShader(drawMode, effectBits);
             // Manually perform region check. Do not create functions inside a
             // loop.
