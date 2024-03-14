@@ -330,7 +330,7 @@ class Drawable {
                 const newKey = `u_${effectName}${capitalizeFirstLetter(key)}`;
                 acc[newKey] = uniforms[key];
                 return acc;
-            }, {});
+            }, this.extraEffectUniforms[effectName] || {});
         } else {
             this.enabledExtraEffect &= ~effectInfo.mask;
             delete this.extraEffectUniforms[effectName];

@@ -71,6 +71,7 @@ uniform vec2 u_tileSize;
 #ifdef ENABLE_clipBox
 uniform int u_clipBoxMode; // 0: ignore, 1: rectangle, 2: circle
 uniform vec4 u_clipBoxShape; // 1: rectangle: centerX, centerY, width, height; 2: circle: x, y, radius, unused
+uniform vec3 u_clipBoxStartEndAngle; // startAngle, endAngle, isSet
 #endif
 
 // Add this to divisors to prevent division by 0, which results in NaNs propagating through calculations.
@@ -287,6 +288,16 @@ void main() {
 	} else if(u_clipBoxMode == 2) {
 		// u_clipBoxShape: [centerX, centerY, radius, unused]
 		if(distance(u_clipBoxShape.xy, texcoord0) > u_clipBoxShape.z) {
+			discard;
+		}
+	}
+	if(u_clipBoxStartEndAngle.z > 0.5) {
+		vec2 dir = texcoord0 - u_clipBoxShape.xy;
+		float angle = atan(dir.y, dir.x);
+		if(angle < 0.0) {
+			angle += 2.0 * 3.14159265;
+		}
+		if(angle < u_clipBoxStartEndAngle.x || angle > u_clipBoxStartEndAngle.y) {
 			discard;
 		}
 	}
