@@ -317,12 +317,12 @@ class Drawable {
      * @param {object.<string,*>|undefined} uniforms A new effect value. if undefined, the effect will be disabled.
      */
     updateExtraEffect (effectName, uniforms) {
-        this._renderer.dirty = true;
         const effectInfo = ShaderManager.EXTRA_EFFECT_INFO[effectName];
         if (!effectInfo) {
             log.warn(`Unknown extra effect: ${effectName}`);
             return;
         }
+        this._renderer.dirty = true;
         if (uniforms) {
             this.enabledExtraEffect |= effectInfo.mask;
             // Convert the uniforms to the format expected by the shader
