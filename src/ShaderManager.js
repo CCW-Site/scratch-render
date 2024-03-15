@@ -60,6 +60,11 @@ class ShaderManager {
                 defines.push(`#define ENABLE_${ShaderManager.EFFECTS[index]}`);
             }
         }
+        for (const name in ShaderManager.EXTRA_EFFECT_INFO) {
+            if ((effectBits & ShaderManager.EXTRA_EFFECT_INFO[name].mask) !== 0) {
+                defines.push(`#define ENABLE_${name}`);
+            }
+        }
 
         const definesText = `${defines.join('\n')}\n`;
 
@@ -138,6 +143,29 @@ ShaderManager.EFFECT_INFO = {
         mask: 1 << 6,
         converter: x => 1 - (Math.max(0, Math.min(x, 100)) / 100),
         shapeChanges: false
+    }
+};
+
+ShaderManager.EXTRA_EFFECT_INFO = {
+    nineSlice: {
+        mask: 1 << 11,
+        shapeChanges: true
+    },
+    gaussianBlur: {
+        mask: 1 << 12,
+        shapeChanges: false
+    },
+    tint: {
+        mask: 1 << 13,
+        shapeChanges: false
+    },
+    tile: {
+        mask: 1 << 14,
+        shapeChanges: true
+    },
+    clipBox: {
+        mask: 1 << 15,
+        shapeChanges: true
     }
 };
 

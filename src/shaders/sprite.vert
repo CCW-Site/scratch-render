@@ -1,4 +1,5 @@
 precision mediump float;
+precision mediump int;
 
 #ifdef DRAW_MODE_line
 uniform vec2 u_stageSize;
@@ -20,6 +21,16 @@ const float epsilon = 1e-3;
 uniform mat4 u_projectionMatrix;
 uniform mat4 u_modelMatrix;
 attribute vec2 a_texCoord;
+
+#ifdef ENABLE_nineSlice
+uniform vec2 u_nineSliceScale;
+uniform int u_nineSliceMode;
+#endif
+
+#ifdef ENABLE_tile
+uniform vec2 u_tileSize;
+#endif
+
 #endif
 
 attribute vec2 a_position;
@@ -76,7 +87,19 @@ void main() {
 	#elif defined(DRAW_MODE_background)
 	gl_Position = vec4(a_position * 2.0, 0, 1);
 	#else
-	gl_Position = u_projectionMatrix * u_modelMatrix * vec4(a_position, 0, 1);
+	vec2 position = a_position;
+
+	#ifdef ENABLE_nineSlice
+	if(u_nineSliceMode != 0) {
+		position *= u_nineSliceScale;
+	}
+	#endif // ENABLE_nineSlice
+
+	#ifdef ENABLE_tile
+	position *= u_tileSize;
+	#endif // ENABLE_tile
+
+	gl_Position = u_projectionMatrix * u_modelMatrix * vec4(position, 0, 1);
 	v_texCoord = a_texCoord;
 	#endif
 }
