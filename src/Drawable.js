@@ -325,12 +325,7 @@ class Drawable {
         this._renderer.dirty = true;
         if (uniforms) {
             this.enabledExtraEffect |= effectInfo.mask;
-            // Convert the uniforms to the format expected by the shader
-            this.extraEffectUniforms[effectName] = Object.keys(uniforms).reduce((acc, key) => {
-                const newKey = `u_${effectName}${capitalizeFirstLetter(key)}`;
-                acc[newKey] = uniforms[key];
-                return acc;
-            }, this.extraEffectUniforms[effectName] || {});
+            this.extraEffectUniforms[effectName] = uniforms;
         } else {
             this.enabledExtraEffect &= ~effectInfo.mask;
             delete this.extraEffectUniforms[effectName];
@@ -357,8 +352,12 @@ class Drawable {
 
     injectExtraEffectUniforms (uniforms) {
         for (const effectName in this.extraEffectUniforms) {
-            this.extraEffectUniforms[effectName] = this.extraEffectUniforms[effectName] || {};
-            Object.assign(uniforms, this.extraEffectUniforms[effectName]);
+            const uniform = this.extraEffectUniforms[effectName] || {};
+            for (const key in uniform) {
+                // Convert the uniforms to the format expected by the shader
+                const newKey = `u_${effectName}${capitalizeFirstLetter(key)}`;
+                uniforms[newKey] = uniform[key];
+            }
         }
     }
 

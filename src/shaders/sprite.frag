@@ -161,11 +161,19 @@ vec2 scale9Slice(vec2 texcoord, vec2 scale, vec4 padding, int mode) {
 	} else if(texcoord.x > left && texcoord.x < scale.x - right && (texcoord.y < top || texcoord.y > scale.y - bottom)) {
 		// between left and right on top or bottom
 		uv.x = fract((texcoord.x - left) / xScaled) + left;
-		uv.y = fract(uv.y);
+		if(texcoord.y < top) {
+			uv.y = uv.y;
+		} else {
+			uv.y = texcoord.y - scale.y + 1.0;
+		}
 	} else if(texcoord.y > top && texcoord.y < scale.y - bottom && (texcoord.x < left || texcoord.x > scale.x - right)) {
 		// bettween top and bottom on left or right
-		uv.x = fract(uv.x);
 		uv.y = fract((texcoord.y - top) / yScaled) + top;
+		if(texcoord.x < left) {
+			uv.x = uv.x;
+		} else {
+			uv.x = texcoord.x - scale.x + 1.0;
+		}
 	} else {
 		// center
 		if(mode == 1) {
