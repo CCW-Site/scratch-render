@@ -317,7 +317,7 @@ void main() {
 	gl_FragColor = texture2D(u_skin, texcoord0);
 	#endif
 
-	#if defined(ENABLE_color) || defined(ENABLE_brightness)
+	#if defined(ENABLE_color) || defined(ENABLE_brightness) || defined(ENABLE_tint)
 	// Divide premultiplied alpha values for proper color processing
 	// Add epsilon to avoid dividing by 0 for fully transparent pixels
 	gl_FragColor.rgb = clamp(gl_FragColor.rgb / (gl_FragColor.a + epsilon), 0.0, 1.0);
@@ -347,17 +347,14 @@ void main() {
 	gl_FragColor.rgb = clamp(gl_FragColor.rgb + vec3(u_brightness), vec3(0), vec3(1));
 	#endif // ENABLE_brightness
 
+	#ifdef ENABLE_tint
+	gl_FragColor.rgb = mix(gl_FragColor.rgb, u_tintColor.rgb, u_tintColor.a);
+	#endif // ENABLE_tint
+
 	// Re-multiply color values
 	gl_FragColor.rgb *= gl_FragColor.a + epsilon;
 
-	#endif // defined(ENABLE_color) || defined(ENABLE_brightness)
-
-	#ifdef ENABLE_tint
-	if(gl_FragColor.a == 0.0) {
-		discard;
-	}
-	gl_FragColor.rgb = mix(gl_FragColor.rgb, u_tintColor.rgb, u_tintColor.a);
-	#endif // ENABLE_tint
+	#endif // defined(ENABLE_color) || defined(ENABLE_brightness) || defined(ENABLE_tint)
 
 	#ifdef ENABLE_ghost
 	gl_FragColor *= u_ghost;
