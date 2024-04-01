@@ -276,6 +276,13 @@ class RenderWebGL extends EventEmitter {
         };
     }
 
+    resetBuiltinManager () {
+        // RESET ALL MANAGERS TO DEFAULT
+        this._gandiShaderManager = new GandiShaderManager(this._gl, this._bufferInfo, this);
+        this.spineManager = new SpineManager(this, this._gl);
+        this.layerManager = new LayerManager(this);
+    }
+
     _createFBO (gl, width, height) {
         if (this.fbo) {
             gl.deleteFramebuffer(this.fbo.framebuffer);
