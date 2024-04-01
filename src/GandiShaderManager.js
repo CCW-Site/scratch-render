@@ -35,6 +35,11 @@ class GandiShaderManager {
         return !!this.syncShader._program;
     }
 
+    reset () {
+        this.postProcessing = [];
+        this.effectors.clear();
+    }
+
     unregister (name) {
         if (this.effectors.has(name)) {
             const oldEffector = this.effectors.get(name);
