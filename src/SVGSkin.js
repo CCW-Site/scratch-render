@@ -4,7 +4,7 @@ const Skin = require('./Skin');
 const {loadSvgString, serializeSvgToString} = require('scratch-svg-renderer');
 const ShaderManager = require('./ShaderManager');
 
-const MAX_TEXTURE_DIMENSION = 2048;
+const MAX_TEXTURE_DIMENSION = 2566;
 
 /**
  * All scaled renderings of the SVG are stored in an array. The 1.0 scale of
@@ -130,7 +130,6 @@ class SVGSkin extends Skin {
         this._context.clearRect(0, 0, this._canvas.width, this._canvas.height);
         this._context.setTransform(scale, 0, 0, scale, 0, 0);
         this._context.drawImage(this._svgImage, 0, 0);
-
         // Pull out the ImageData from the canvas. ImageData speeds up
         // updating Silhouette and is better handled by more browsers in
         // regards to memory.
