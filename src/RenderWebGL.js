@@ -310,6 +310,13 @@ class RenderWebGL extends EventEmitter {
     }
 
     /**
+     * @return {SpineSkin} the SpineSkin class, which is used for extensions.
+     */
+    getSpineSkinClass () {
+        return SpineSkin;
+    }
+
+    /**
      * @param {int} skinId the ID for the skin.
      * @return {Skin} the skin instance
      */
